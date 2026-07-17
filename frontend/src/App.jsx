@@ -6,6 +6,9 @@ import Administration from './pages/Administration';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import Favorites from './pages/Favorites';
+import BookingForm from './pages/BookingForm';
+import UserBookings from './pages/UserBookings';
+import WhatsAppWidget from './components/WhatsAppWidget';
 
 function App() {
   return (
@@ -17,7 +20,10 @@ function App() {
         <Route path="/registro" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/favoritos" element={<Favorites />} />
+        <Route path="/producto/:id/reserva" element={<BookingForm />} />
+        <Route path="/mis-reservas" element={<UserBookings />} />
       </Routes>
+      <WhatsAppWidget />
     </BrowserRouter>
   );
 }

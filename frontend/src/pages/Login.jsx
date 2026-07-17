@@ -1,17 +1,21 @@
 import React, { useState, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useContext(AuthContext);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // Check if redirected from a booking attempt (complying with User Story 30)
+  const isFromBooking = location.state?.fromBooking;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,8 +39,12 @@ const Login = () => {
     setLoading(true);
     try {
       await login(email, password);
-      // Success, redirect to Home
-      navigate('/');
+      // If we came from a booking page, redirect back to the reservation form, otherwise to Home
+      if (isFromBooking && location.state?.productId) {
+        navigate(`/producto/${location.state.productId}/reserva`);
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err.message || 'Error de red: No se pudo conectar con el servidor.');
     } finally {
@@ -47,7 +55,15 @@ const Login = () => {
   return (
     <>
       <Header />
-      <main className="app-main" style={{ backgroundColor: 'var(--bg-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
+      <main className="app-main" style={{ backgroundColor: 'var(--bg-light)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
+        
+        {/* Warning Banner for booking redirects (complying with User Story 30) */}
+        {isFromBooking && (
+          <div className="form-error" style={{ width: '100%', maxWidth: '450px', marginBottom: '20px', padding: '16px', backgroundColor: '#FFF3CD', color: '#856404', borderColor: '#FFEeba', borderStyle: 'solid', borderWidth: '1px', borderRadius: 'var(--radius-sm)', textAlign: 'center', fontWeight: 600 }}>
+            ⚠️ Para realizar una reserva de alojamiento es obligatorio iniciar sesión. Si aún no tienes una cuenta, por favor presiona "Registrate" abajo.
+          </div>
+        )}
+
         <div className="admin-card" style={{ width: '100%', maxWidth: '450px', margin: '0 auto' }}>
           <h2 className="admin-section-title" style={{ textAlign: 'center', marginBottom: '24px' }}>Iniciar sesión</h2>
           

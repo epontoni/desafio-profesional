@@ -17,6 +17,12 @@ public class Booking {
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
+    @Column(name = "estimated_arrival_time")
+    private String estimatedArrivalTime;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
@@ -58,6 +64,22 @@ public class Booking {
 
     public void setEndDate(LocalDate endDate) {
         this.endDate = endDate;
+    }
+
+    public String getEstimatedArrivalTime() {
+        return estimatedArrivalTime;
+    }
+
+    public void setEstimatedArrivalTime(String estimatedArrivalTime) {
+        this.estimatedArrivalTime = estimatedArrivalTime;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
     }
 
     public Product getProduct() {

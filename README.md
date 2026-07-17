@@ -1,126 +1,256 @@
-# Digital Booking - Plataforma de Reservas
+# 🏢 Digital Booking — Plataforma de Reservas de Alojamiento
+> *"Sentite como en tu hogar"* 🏠
 
-Este proyecto es una plataforma web para la reserva de alojamientos (Hoteles, Hostels, Departamentos y Bed and Breakfast) que permite gestionar de forma robusta la disponibilidad de los servicios. Está desarrollado bajo una arquitectura moderna desacoplada con un **Backend en Java Spring Boot** y un **Frontend en React (Vite)**.
-
----
-
-## 01. Definición del Proyecto
-
-**Digital Booking** es una solución digital diseñada para conectar a viajeros con su alojamiento ideal. La plataforma provee:
-*   **Búsqueda interactiva** de ofertas en base a ubicación y fechas.
-*   **Clasificación por categorías** (Hoteles, Departamentos, Hostels, B&B) para facilitar el filtrado.
-*   **Detalle completo del producto** con descripciones detalladas, listado de comodidades (Wi-Fi, piscina) y galería de imágenes responsiva de 5 fotos con visualizador (Lightbox/Slideshow).
-*   **Panel de administración** en escritorio para registrar nuevos alojamientos con múltiples imágenes, verificar duplicidad de nombres y listar/eliminar productos de la base de datos de manera dinámica.
+Digital Booking es una plataforma web full-stack diseñada para conectar a viajeros con su alojamiento ideal (Hoteles, Departamentos, Hostels y Bed & Breakfasts). Los usuarios pueden explorar recomendaciones, buscar por destino y disponibilidad en tiempo real, guardar sus favoritos, leer reseñas, simular contacto por WhatsApp y realizar reservas con confirmación instantánea por correo electrónico. El sistema cuenta con un completo panel de administración para gestionar el catálogo.
 
 ---
 
-## 02. Diseño de Identidad de Marca
+## 🛠️ Tecnologías y Librerías
 
-La identidad de la marca está alineada con valores de confort, seguridad y modernidad.
+El proyecto está construido bajo una arquitectura desacoplada utilizando el siguiente conjunto de tecnologías:
 
-### Logotipo e Isologotipo
-*   **Logo ("Db")**: Un isotipo minimalista cuadrado en color pizarra con letras blancas que simboliza una base de datos segura y una reserva sólida.
-*   **Lema (Slogan)**: *"Sentite como en tu hogar"*, transmitiendo calidez y hospitalidad.
+### Frontend
+*   **React 18.2** (Librería principal de interfaz de usuario)
+*   **Vite 6.x** (Servidor de desarrollo y compilador optimizado)
+*   **React Router Dom 6.x** (Manejador de rutas y guards de navegación)
+*   **Lucide React** (Paquete premium de iconos vectoriales)
+*   **Vanilla CSS** (Hojas de estilo puras y flexibles)
 
-### Paleta de Colores
-*   **Pizarra Oscuro (Primary Dark)**: `#383B58` (Representa profesionalismo, estabilidad y elegancia).
-*   **Teal Vibrante (Accent)**: `#1DBEB4` (Representa frescura, dinamismo e innovación tecnológica).
-*   **Gris Suave (Background)**: `#F3F3F4` (Mantiene el fondo limpio y permite que las imágenes del catálogo resalten).
-*   **Carbono (Text Dark)**: `#1A1B2F` (Asegura un alto contraste y legibilidad óptima).
-
----
-
-## 03. Estructura del Repositorio
-
-```text
-desafio-profesional/
-├── api/             # Backend en Spring Boot 3.x/4.x (Java 21, Maven, H2 DB)
-└── frontend/        # Frontend en React (Vite, React Router, Lucide, Vanilla CSS)
-```
+### Backend & Base de Datos
+*   **Java 21 JDK** (Lenguaje de desarrollo principal)
+*   **Spring Boot 3.4.x / 4.1.0** (Starter Parent)
+    *   *Spring Data JPA* (Mapeador objeto-relacional)
+    *   *Spring Web* (Desarrollo de API REST)
+    *   *Spring Mail* (Starter para envío de correos electrónicos)
+*   **H2 Database Engine** (Base de datos SQL en memoria autosebrada en el inicio de la app)
+*   **Maven** (Gestor de dependencias y compilación)
 
 ---
 
-## 04. Instrucciones de Ejecución
+## 📦 Instalación y Ejecución Local
 
-### Backend (Spring Boot API)
-El backend requiere Java 17 o superior (desarrollado con Java 21) y utiliza una base de datos **H2** en memoria autosebrada con 12 productos reales al iniciar.
+### Requisitos Previos
+*   **Node.js**: v18 o superior instalado.
+*   **Java JDK**: versión 17 o superior (desarrollado con Java 21).
 
-1.  Navegar a la carpeta `api`:
+### Pasos Generales
+1.  **Clonar el repositorio**:
+    ```bash
+    git clone https://github.com/epontoni/desafio-profesional.git
+    cd desafio-profesional
+    ```
+
+### Ejecución del Backend (Spring Boot)
+1.  Ingresar a la carpeta de la API:
     ```bash
     cd api
     ```
-2.  Compilar y ejecutar la aplicación (ejemplo usando el wrapper de Maven):
+2.  Compilar el backend:
+    ```bash
+    ./mvnw clean compile
+    ```
+3.  Iniciar el servidor de Spring Boot:
     ```bash
     ./mvnw spring-boot:run
     ```
-3.  La API estará disponible en `http://localhost:8080`.
-4.  La consola de H2 se puede acceder en `http://localhost:8080/h2-console` (JDBC URL: `jdbc:h2:mem:digitalbookingdb`, usuario: `sa`, sin contraseña).
+4.  La API estará disponible en `http://localhost:8080`.
+5.  Puedes acceder a la consola visual de la base de datos H2 en `http://localhost:8080/h2-console` usando:
+    *   **JDBC URL**: `jdbc:h2:mem:digitalbookingdb`
+    *   **User Name**: `sa`
+    *   **Password**: (dejar en blanco)
 
-### Frontend (React)
-El frontend se ejecuta sobre Node.js utilizando Vite.
-
-1.  Navegar a la carpeta `frontend`:
+### Ejecución del Frontend (React + Vite)
+1.  Ingresar a la carpeta del frontend:
     ```bash
-    cd frontend
+    cd ../frontend
     ```
 2.  Instalar dependencias:
     ```bash
     npm install
     ```
-3.  Iniciar el servidor de desarrollo:
+3.  Iniciar servidor de desarrollo:
     ```bash
     npm run dev
     ```
-4.  Abrir en el navegador `http://localhost:5173`.
+4.  Abrir la aplicación en tu navegador en `http://localhost:5173`.
 
 ---
 
-## 05. Planificación y Ejecución de los Tests (QA)
+## ⚙️ Variables de Entorno y Configuración
 
-Se planificaron y ejecutaron pruebas manuales sobre las 11 User Stories de este Sprint. Todos los criterios de aceptación fueron validados exitosamente.
+### Backend Configuration (`api/src/main/resources/application.properties`)
+```properties
+server.port=8080
+spring.datasource.url=jdbc:h2:mem:digitalbookingdb
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+spring.h2.console.enabled=true
+```
+
+### Frontend Configuration (`frontend/.env.development` / default fallback)
+La URL de la API local está configurada por defecto como:
+`http://localhost:8080/api`
+
+---
+
+## 🔑 Cuentas de Prueba Autocreadas (Data Seeding)
+El sistema precarga automáticamente los siguientes perfiles al iniciar:
+
+*   **Administrador**:
+    *   **Email**: `admin@digitalbooking.com`
+    *   **Contraseña**: `admin123`
+*   **Usuario Común**:
+    *   **Email**: `user@digitalbooking.com`
+    *   **Contraseña**: `user123`
+
+---
+
+## 🗄️ Diagrama de Base de Datos (Relacional)
+
+El esquema de datos relacional modelado en Spring Boot se representa a continuación:
+
+```mermaid
+classDiagram
+    class User {
+        +Long id
+        +String firstName
+        +String lastName
+        +String email
+        +String password
+        +String role
+    }
+    class Category {
+        +Long id
+        +String title
+        +String description
+        +String imageUrl
+    }
+    class Characteristic {
+        +Long id
+        +String name
+        +String icon
+    }
+    class Product {
+        +Long id
+        +String name
+        +String description
+        +String location
+        +double rating
+        +String ratingText
+        +Category category
+        +List~Characteristic~ characteristics
+        +List~String~ images
+    }
+    class Booking {
+        +Long id
+        +LocalDate startDate
+        +LocalDate endDate
+        +String estimatedArrivalTime
+        +String notes
+        +Product product
+        +User user
+    }
+    class Review {
+        +Long id
+        +int stars
+        +String comment
+        +String userName
+        +LocalDate date
+        +Product product
+    }
+
+    Product --> Category : Many-to-One
+    Product "1" *-- "*" Characteristic : Many-to-Many
+    Booking --> Product : Many-to-One
+    Booking --> User : Many-to-One
+    Review --> Product : Many-to-One
+```
+
+---
+
+## 🔌 Endpoints de la API REST
+
+| Método | Endpoint | Descripción | Requiere Auth |
+| :--- | :--- | :--- | :---: |
+| **POST** | `/api/auth/register` | Registrar un nuevo usuario en el sistema. Dispara el correo de bienvenida. | ❌ No |
+| **POST** | `/api/auth/login` | Iniciar sesión. Retorna DTO con datos de perfil y rol. | ❌ No |
+| **GET** | `/api/products` | Obtener listado de alojamientos (permite filtrar opcionalmente por `categoryTitle`). | ❌ No |
+| **GET** | `/api/products/random` | Obtener 10 alojamientos barajados al azar para la sección de recomendaciones. | ❌ No |
+| **GET** | `/api/products/page` | Obtener catálogo de productos paginado. | ❌ No |
+| **GET** | `/api/products/search/page` | Buscar productos por ubicación y rango de fechas disponibles (excluye solapados). | ❌ No |
+| **GET** | `/api/products/{id}` | Obtener la ficha de detalles de un alojamiento. | ❌ No |
+| **POST** | `/api/products` | Crear un nuevo alojamiento (con múltiples imágenes y amenities). | 👮 Admin |
+| **DELETE** | `/api/products/{id}` | Eliminar un alojamiento del catálogo. | 👮 Admin |
+| **GET** | `/api/categories` | Obtener todas las categorías registradas. | ❌ No |
+| **POST** | `/api/categories` | Agregar una categoría. | 👮 Admin |
+| **DELETE** | `/api/categories/{id}` | Eliminar una categoría (con modal preventivo de alerta). | 👮 Admin |
+| **GET** | `/api/characteristics` | Obtener todas las características de amenities registradas. | ❌ No |
+| **POST** | `/api/characteristics` | Agregar una característica de producto. | 👮 Admin |
+| **DELETE** | `/api/characteristics/{id}` | Eliminar una característica de producto. | 👮 Admin |
+| **GET** | `/api/bookings/product/{productId}` | Obtener todas las reservas de un producto específico. | ❌ No |
+| **GET** | `/api/bookings/user/{email}` | Obtener el historial de reservas de un usuario. | 👤 User / Admin |
+| **POST** | `/api/bookings` | Crear una reserva. Dispara correo electrónico de confirmación. | 👤 User / Admin |
+| **GET** | `/api/users` | Listar todos los usuarios. | 👮 Admin |
+| **PUT** | `/api/users/{id}/role` | Modificar rol (Promover usuario común a admin o viceversa). | 👮 Admin |
+| **GET** | `/api/products/{productId}/reviews` | Obtener reseñas de huéspedes para un producto. | ❌ No |
+| **POST** | `/api/products/{productId}/reviews` | Calificar producto y publicar reseña. Recalcula el promedio del producto. | 👤 User / Admin |
+
+---
+
+## 🧪 Pruebas Automatizadas (Testing)
+Para ejecutar las pruebas unitarias integradas en el backend:
+1.  Ingresar a la carpeta `api`:
+    ```bash
+    cd api
+    ```
+2.  Correr los tests con Maven:
+    ```bash
+    ./mvnw test
+    ```
+
+---
+
+## 📋 Control de Calidad (QA) - Matrices de Casos de Prueba
 
 ### Matriz de Casos de Prueba (Sprint 1)
-
-| ID Story | Historia de Usuario | Casos de Prueba Planificados | Resultado | Estado |
-| :--- | :--- | :--- | :--- | :--- |
-| **#1** | Colocar encabezado | 1. Verificar visualización del logo y lema a la izquierda.<br>2. Probar redirección al hacer clic en el logo.<br>3. Verificar botones de cuenta en resoluciones desktop/mobile. | Redirecciona a `/` correctamente. Ocupa el 100% de la pantalla y queda sticky al hacer scroll. | **PASS** |
-| **#2** | Definir el cuerpo | 1. Verificar color de fondo `#F3F3F4` en toda la web.<br>2. Validar que la sección ocupe el 100% del alto disponible.<br>3. Validar presencia de las 3 secciones (buscador, categorías, recomendaciones). | Cumple con la paleta corporativa y muestra todas las secciones de manera fluida. | **PASS** |
-| **#3** | Registrar producto | 1. Intentar agregar un producto con nombre único.<br>2. Intentar agregar un producto con un nombre que ya existe en la DB.<br>3. Validar la inserción de múltiples URLs de imagen. | Bloquea nombres duplicados y arroja error 400 *"El nombre del producto ya está en uso"* en pantalla. Guarda correctamente en H2. | **PASS** |
-| **#4** | Visualizar aleatorios | 1. Verificar que al cargar la sección "Recomendaciones Aleatorias" se muestren máximo 10 productos.<br>2. Validar que no haya duplicados.<br>3. Verificar distribución de grilla. | Muestra hasta 10 productos aleatorios distintos barajados desde el backend. | **PASS** |
-| **#5** | Detalle de producto | 1. Hacer clic en "Ver detalle" e ingresar al producto.<br>2. Validar header del detalle (título a la izquierda, flecha a la derecha).<br>3. Verificar descripción e imágenes. | Navegación e información de producto cargan fluidamente desde la API. | **PASS** |
-| **#6** | Galería de imágenes | 1. Validar grilla de 5 imágenes (1 grande a la izquierda, 4 pequeñas a la derecha en Desktop).<br>2. Probar botón "Ver más".<br>3. Probar que el visualizador (slideshow/modal) permita recorrer las fotos y cerrarse. | Galería responsiva colapsa en mobile y expande en modal carrusel interactivo al presionar "Ver más". | **PASS** |
-| **#7** | Pie de página | 1. Verificar footer al final de la página (ancho 100%).<br>2. Validar isologotipo, año actual y copyright.<br>3. Validar íconos sociales. | Footer responsivo color `#1DBEB4` con año actualizado y links a redes sociales. | **PASS** |
-| **#8** | Paginar productos | 1. Entrar en la pestaña "Catálogo Completo".<br>2. Validar la limitación a 10 productos por página.<br>3. Probar botones de navegación (Inicio, Anterior, Siguiente). | Control de páginas operativo en base al paginado de Spring Boot. | **PASS** |
-| **#9** | Panel de administración | 1. Acceder a `/administracion` desde PC (Ver panel).<br>2. Acceder a `/administracion` desde dispositivo móvil (Verificar bloqueo). | En pantallas móviles (<768px) bloquea el panel y muestra el mensaje indicando no estar disponible. | **PASS** |
-| **#10** | Listar productos | 1. Ingresar a "Lista de productos" en el panel.<br>2. Validar columnas: Id, Nombre y Acciones. | Tabla muestra todos los alojamientos de la DB listados en orden. | **PASS** |
-| **#11** | Eliminar producto | 1. Presionar "Eliminar" en un producto de la lista.<br>2. Seleccionar "Cancelar" en el modal de confirmación (No borrar).<br>3. Seleccionar "Confirmar" (Eliminar de DB y actualizar lista). | Modal de doble confirmación bloquea eliminaciones accidentales y borra definitivamente de H2 al confirmar. | **PASS** |
+*   **U.S. #1 (Header)**: Logo y redirección, sticky header funcional. **PASS**
+*   **U.S. #2 (Body)**: Grid modular con buscador, categorías y grilla de recomendaciones. **PASS**
+*   **U.S. #3 (Registrar producto)**: Valida nombres de alojamiento únicos y subida de múltiples fotos. **PASS**
+*   **U.S. #4 (Recomendaciones)**: Muestra un máximo de 10 productos aleatorios sin repetición. **PASS**
+*   **U.S. #5 (Ficha Detalle)**: Muestra información específica al hacer clic en "Ver detalle". **PASS**
+*   **U.S. #6 (Lightbox)**: Galería responsiva y modal carrusel de 5 fotos. **PASS**
+*   **U.S. #7 (Footer)**: Copyright y redes sociales con iconos. **PASS**
+*   **U.S. #8 (Catálogo Paginado)**: Controladores de paginación funcionales. **PASS**
+*   **U.S. #9 (Admin Blocker)**: Panel bloqueado en pantallas móviles (<768px). **PASS**
+*   **U.S. #10 (Listar productos)**: Tabla con columnas Id, Nombre y Acciones. **PASS**
+*   **U.S. #11 (Eliminar producto)**: Modal de doble confirmación funcional. **PASS**
 
 ### Matriz de Casos de Prueba (Sprint 2)
-
-| ID Story | Historia de Usuario | Casos de Prueba Planificados | Resultado | Estado |
-| :--- | :--- | :--- | :--- | :--- |
-| **#12** | Categorizar productos | 1. Crear producto nuevo seleccionando categoría desde combo.<br>2. Validar que se persista en DB correctamente. | Combo box carga categorías desde la API; persiste la relación Many-to-One. | **PASS** |
-| **#13** | Registrar usuario | 1. Probar registro con datos vacíos.<br>2. Probar formato incorrecto de email.<br>3. Validar longitud de contraseña menor a 6 caracteres.<br>4. Registrar usuario válido. | Frena inputs erróneos y muestra mensajes específicos. Cifra el password en SHA-256 en base de datos. | **PASS** |
-| **#14** | Identificar usuario | 1. Probar login con credenciales erróneas.<br>2. Loguearse con cuenta registrada.<br>3. Verificar avatar con iniciales (e.g. "JP" para Juan Pérez). | Rechaza accesos inválidos con banner de error. Inicia sesión mostrando avatar circular y nombre. | **PASS** |
-| **#15** | Cerrar sesión | 1. Hacer clic en el avatar para abrir dropdown.<br>2. Presionar "Cerrar sesión".<br>3. Comprobar que limpie sesión e impida acceso a páginas restringidas. | Remueve el token de localStorage y redirecciona de forma segura a Home en modo anónimo. | **PASS** |
-| **#16** | Identificar administrador | 1. Loguearse con usuario común y forzar URL `/administracion`.<br>2. Loguearse con admin y promover usuario común.<br>3. Comprobar permisos. | Bloquea usuarios comunes con aviso de Acceso Denegado. Dashboard de asignación de roles operativo. | **PASS** |
-| **#17** | Administrar característica | 1. Ingresar a sección características en Admin.<br>2. Añadir característica (ej. "Gimnasio") y elegir ícono.<br>3. Vincular característica a un nuevo producto. | Guarda la característica en DB y permite seleccionarla vía checkbox al crear alojamientos. | **PASS** |
-| **#18** | Visualizar características | 1. Abrir detalle de un alojamiento.<br>2. Verificar grilla "Características" con sus íconos correspondientes. | Renderiza grilla responsiva mapeando nombres a íconos Lucide. | **PASS** |
-| **#19** | Notificación (Opcional) | 1. Registrar usuario exitosamente.<br>2. Validar en logs de backend que se intente enviar / simule correo de bienvenida. | Captura la acción y loguea/simula el correo de bienvenida con credenciales y link de login. | **PASS** |
-| **#20** | Sección de categorías | 1. Clic en tarjeta de categoría (ej. "Departamentos").<br>2. Comprobar filtrado e indicador de cantidades.<br>3. Presionar "Quitar filtro". | Filtra catálogo en base a la API paginada, mostrando conteos exactos e interactivos. | **PASS** |
-| **#21** | Agregar categoría | 1. Ingresar a sección categorías en Admin.<br>2. Añadir título, descripción y URL de foto.<br>3. Confirmar persistencia en catálogo Home. | Registra la nueva categoría dinámicamente y la renderiza de inmediato en las tarjetas superiores del Home. | **PASS** |
+*   **U.S. #12 (Categorizar)**: Asignación de categorías desde combo box dinámico. **PASS**
+*   **U.S. #13 (Registrar usuario)**: Cifrado en backend (SHA-256) y validación en formulario. **PASS**
+*   **U.S. #14 (Login)**: Avatar circular con iniciales tras iniciar sesión. **PASS**
+*   **U.S. #15 (Logout)**: Limpia localStorage y redirecciona de forma segura. **PASS**
+*   **U.S. #16 (Asignar Roles)**: Dashboard para promover usuarios y bloqueador de rutas. **PASS**
+*   **U.S. #17 & #18 (Características CRUD)**: Altas/bajas y checkboxes en altas de productos. Mapeo a Lucide icons. **PASS**
+*   **U.S. #19 (Emails Registro)**: Disparo/simulación en consola del correo de bienvenida. **PASS**
+*   **U.S. #20 (Home Filtros)**: Clic en categorías filtra el catálogo y muestra totales. **PASS**
+*   **U.S. #21 (Añadir categorías)**: CRUD para crear categorías en panel administrativo. **PASS**
 
 ### Matriz de Casos de Prueba (Sprint 3)
+*   **U.S. #22 (Realizar Búsqueda)**: Autocompletado de ciudades y rango en calendario doble. **PASS**
+*   **U.S. #23 (Calendario Disponibilidad)**: Destaca fechas bloqueadas en color rojo y tachado. **PASS**
+*   **U.S. #24 & #25 (Favoritos)**: Marcar con corazón, persistir por usuario e historial `/favoritos`. **PASS**
+*   **U.S. #26 (Políticas)**: Sección responsiva de 3 columnas de normas en detalle de alojamiento. **PASS**
+*   **U.S. #27 (Compartir)**: Modal flotante interactivo para compartir link a redes. **PASS**
+*   **U.S. #28 (Calificaciones)**: Valoraciones por estrellas recalculan promedios decimales del hotel. **PASS**
+*   **U.S. #29 (Seguridad Categorías)**: Alerta modal preventivo para evitar borrados accidentales. **PASS**
 
-| ID Story | Historia de Usuario | Casos de Prueba Planificados | Resultado | Estado |
-| :--- | :--- | :--- | :--- | :--- |
-| **#22** | Realizar búsqueda | 1. Ingresar "Bariloche" en campo destino (probar autocompletado).<br>2. Seleccionar rango de fechas en calendario doble.<br>3. Hacer clic en "Buscar" y verificar exclusión de productos ocupados. | Ofrece sugerencias válidas. Filtra alojamientos cruzando geolocalización y disponibilidad en H2. | **PASS** |
-| **#23** | Visualizar disponibilidad | 1. Ingresar al detalle de un alojamiento.<br>2. Comprobar que las fechas con reservas existentes se muestren tachadas y en rojo.<br>3. Validar botón de reintento ante fallos de API. | DoubleCalendar carga bloqueos dinámicamente. Botón de reintento funcional si se desconecta la API. | **PASS** |
-| **#24** | Marcar como favorito | 1. Hacer clic en el corazón de un producto sin loguearse (redirección a login).<br>2. Iniciar sesión y presionar corazón en Home (cambia a rojo relleno). | Bloquea usuarios anónimos. Agrega o remueve IDs del localStorage según sesión activa. | **PASS** |
-| **#25** | Listar favoritos | 1. Navegar a `/favoritos` desde el menú de usuario.<br>2. Comprobar listado dinámico.<br>3. Presionar ícono de basura para desmarcar y ver actualización en tiempo real. | Muestra catálogo exclusivo del usuario. La sincronización vía Custom Event actualiza el listado. | **PASS** |
-| **#26** | Bloque de políticas | 1. Entrar en detalle de producto.<br>2. Verificar bloque al final (ancho 100%, título principal subrayado).<br>3. Validar las 3 columnas. | Formato CSS impecable con columnas responsivas y normas estructuradas. | **PASS** |
-| **#27** | Compartir productos | 1. Hacer clic en ícono compartir en cabecera del detalle.<br>2. Seleccionar red social (Twitter/Facebook).<br>3. Escribir mensaje personalizado y confirmar.<br>4. Verificar tarjeta de previsualización. | Despliega modal interactivo con imagen, descripción corta y URL. Redirecciona a redes con URL codificada. | **PASS** |
-| **#28** | Puntuar producto | 1. Loguearse e ingresar reseña de 5 estrellas con comentario.<br>2. Enviar y comprobar recálculo de puntuación media en tiempo real en cabecera y listados. | Guarda review en DB, recalcula promedio (escala 1-10) y actualiza de inmediato el catálogo. | **PASS** |
-| **#29** | Eliminar categoría | 1. Ir a sección categorías en panel Admin.<br>2. Presionar ícono de eliminación en fila.<br>3. Verificar visualización de modal preventivo de alerta.<br>4. Confirmar y verificar borrado. | Modal detiene borrados accidentales y cancela o procede a borrar con borrado físico REST. | **PASS** |
-
-
+### Matriz de Casos de Prueba (Sprint 4)
+*   **U.S. #30 (Redirección Login / Fechas)**: Redirige a login si no está autenticado al reservar, mostrando banner informativo. Permite elegir fechas sin solapamientos. **PASS**
+*   **U.S. #31 (Detalle de Reserva)**: Ficha de reservas en `/producto/{id}/reserva` precarga perfil (Nombre, Apellido, Email) e información del hotel. **PASS**
+*   **U.S. #32 (Confirmar Reserva)**: Envío POST de reserva, validación y pantalla de éxito. **PASS**
+*   **U.S. #33 (Historial)**: Acceso seguro a `/mis-reservas` ordenado cronológicamente con contactos del hotel. **PASS**
+*   **U.S. #34 (WhatsApp)**: Widget flotante inferior derecho integrado en todas las resoluciones. Notifica redirección en toast. **PASS**
+*   **U.S. #35 (Emails Reserva)**: Intercepta y simula detalladamente el envío del correo de confirmación de reserva (check-in, dirección, contactos del hotel). **PASS**

@@ -107,6 +107,19 @@ const Header = () => {
                   >
                     Mis Favoritos
                   </Link>
+                  <Link 
+                    to="/mis-reservas" 
+                    style={{
+                      padding: '10px 16px',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      color: 'var(--primary-color)',
+                      textAlign: 'left'
+                    }}
+                    onClick={() => setShowDropdown(false)}
+                  >
+                    Mis Reservas
+                  </Link>
                   <button 
                     onClick={handleLogout}
                     style={{

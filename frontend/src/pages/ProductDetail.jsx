@@ -141,6 +141,14 @@ const ProductDetail = () => {
     window.dispatchEvent(new Event('favoritesChanged')); // notify favorites page
   };
 
+  const handleStartBookingClick = () => {
+    if (!user) {
+      navigate('/login', { state: { fromBooking: true, productId: id } });
+    } else {
+      navigate(`/producto/${id}/reserva`);
+    }
+  };
+
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     setReviewError(null);
@@ -444,12 +452,29 @@ const ProductDetail = () => {
                 </button>
               </div>
             ) : (
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
-                <DoubleCalendar 
-                  occupiedRanges={bookings} 
-                  readOnly={true}
-                />
-              </div>
+              <>
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
+                  <DoubleCalendar 
+                    occupiedRanges={bookings} 
+                    readOnly={true}
+                  />
+                </div>
+
+                {/* Reserve redirection control panel (complying with User Story 30) */}
+                <div className="admin-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', padding: '24px', flexWrap: 'wrap', gap: '16px', border: '1px solid var(--border)' }}>
+                  <div>
+                    <h4 style={{ margin: 0, color: 'var(--primary-color)', fontSize: '16px', fontWeight: 700 }}>¿Listo para reservar este alojamiento?</h4>
+                    <p style={{ margin: '4px 0 0 0', color: 'var(--text-medium)', fontSize: '13px', fontWeight: 500 }}>Selecciona tus fechas ideales de check-in y check-out ingresando al formulario de reserva.</p>
+                  </div>
+                  <button 
+                    className="btn-submit" 
+                    style={{ maxWidth: '200px', margin: 0 }}
+                    onClick={handleStartBookingClick}
+                  >
+                    Iniciar reserva
+                  </button>
+                </div>
+              </>
             )}
           </div>
 
