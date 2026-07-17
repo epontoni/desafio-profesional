@@ -1,18 +1,13 @@
 package com.digitalbooking.config;
 
 import com.digitalbooking.controller.AuthController;
-import com.digitalbooking.model.Category;
-import com.digitalbooking.model.Characteristic;
-import com.digitalbooking.model.Product;
-import com.digitalbooking.model.User;
-import com.digitalbooking.repository.CategoryRepository;
-import com.digitalbooking.repository.CharacteristicRepository;
-import com.digitalbooking.repository.ProductRepository;
-import com.digitalbooking.repository.UserRepository;
+import com.digitalbooking.model.*;
+import com.digitalbooking.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -24,16 +19,22 @@ public class DataInitializer implements CommandLineRunner {
     private final CategoryRepository categoryRepository;
     private final CharacteristicRepository characteristicRepository;
     private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
+    private final ReviewRepository reviewRepository;
 
     @Autowired
     public DataInitializer(ProductRepository productRepository, 
                            CategoryRepository categoryRepository,
                            CharacteristicRepository characteristicRepository,
-                           UserRepository userRepository) {
+                           UserRepository userRepository,
+                           BookingRepository bookingRepository,
+                           ReviewRepository reviewRepository) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.characteristicRepository = characteristicRepository;
         this.userRepository = userRepository;
+        this.bookingRepository = bookingRepository;
+        this.reviewRepository = reviewRepository;
     }
 
     @Override
@@ -61,15 +62,20 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         // 3. Seed Users if empty
+        User admin = null;
+        User normalUser = null;
         if (userRepository.count() == 0) {
             String hashedAdminPass = AuthController.hashPassword("admin123");
             String hashedUserPass = AuthController.hashPassword("user123");
 
-            userRepository.saveAll(Arrays.asList(
-                new User("Admin", "Digital", "admin@digitalbooking.com", hashedAdminPass, "ROLE_ADMIN"),
-                new User("Juan", "Pérez", "user@digitalbooking.com", hashedUserPass, "ROLE_USER")
-            ));
+            admin = new User("Admin", "Digital", "admin@digitalbooking.com", hashedAdminPass, "ROLE_ADMIN");
+            normalUser = new User("Juan", "Pérez", "user@digitalbooking.com", hashedUserPass, "ROLE_USER");
+
+            userRepository.saveAll(Arrays.asList(admin, normalUser));
             System.out.println("DataInitializer: Seeded default Admin (admin@digitalbooking.com / admin123) and User (user@digitalbooking.com / user123).");
+        } else {
+            admin = userRepository.findByEmail("admin@digitalbooking.com").orElse(null);
+            normalUser = userRepository.findByEmail("user@digitalbooking.com").orElse(null);
         }
 
         // 4. Seed Products if empty
@@ -295,6 +301,24 @@ public class DataInitializer implements CommandLineRunner {
 
             productRepository.saveAll(Arrays.asList(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12));
             System.out.println("DataInitializer: Dynamic Category-linked and Characteristic-linked products loaded successfully into H2 Database.");
+
+            // 5. Seed Bookings
+            LocalDate today = LocalDate.now();
+            bookingRepository.saveAll(Arrays.asList(
+                new Booking(today.plusDays(1), today.plusDays(4), p1, normalUser), // Hermitage Hotel booked next week
+                new Booking(today.plusDays(10), today.plusDays(15), p1, normalUser),
+                new Booking(today.plusDays(3), today.plusDays(7), p2, normalUser) // Apartment Premium Palermo booked
+            ));
+            System.out.println("DataInitializer: Seeded sample bookings for availability testing.");
+
+            // 6. Seed Reviews (pre-populates stars and average rating calculations)
+            reviewRepository.saveAll(Arrays.asList(
+                new Review(5, "¡Excelente estadía! Las vistas al mar son de ensueño y el spa es sumamente relajante.", "Maria Gomez", today.minusDays(5), p1),
+                new Review(4, "Muy lindo hotel, el desayuno es espectacular y la atención de primera. Volveremos.", "Carlos Ruiz", today.minusDays(2), p1),
+                new Review(5, "Espectacular departamento en una zona inmejorable. Súper moderno y cómodo.", "Ana Clara", today.minusDays(1), p2),
+                new Review(4, "Muy buena ubicación y conectividad. Ideal para viajes cortos de trabajo.", "Santiago Peralta", today.minusDays(10), p8)
+            ));
+            System.out.println("DataInitializer: Seeded reviews.");
         }
     }
 }

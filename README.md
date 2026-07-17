@@ -110,3 +110,17 @@ Se planificaron y ejecutaron pruebas manuales sobre las 11 User Stories de este 
 | **#20** | Sección de categorías | 1. Clic en tarjeta de categoría (ej. "Departamentos").<br>2. Comprobar filtrado e indicador de cantidades.<br>3. Presionar "Quitar filtro". | Filtra catálogo en base a la API paginada, mostrando conteos exactos e interactivos. | **PASS** |
 | **#21** | Agregar categoría | 1. Ingresar a sección categorías en Admin.<br>2. Añadir título, descripción y URL de foto.<br>3. Confirmar persistencia en catálogo Home. | Registra la nueva categoría dinámicamente y la renderiza de inmediato en las tarjetas superiores del Home. | **PASS** |
 
+### Matriz de Casos de Prueba (Sprint 3)
+
+| ID Story | Historia de Usuario | Casos de Prueba Planificados | Resultado | Estado |
+| :--- | :--- | :--- | :--- | :--- |
+| **#22** | Realizar búsqueda | 1. Ingresar "Bariloche" en campo destino (probar autocompletado).<br>2. Seleccionar rango de fechas en calendario doble.<br>3. Hacer clic en "Buscar" y verificar exclusión de productos ocupados. | Ofrece sugerencias válidas. Filtra alojamientos cruzando geolocalización y disponibilidad en H2. | **PASS** |
+| **#23** | Visualizar disponibilidad | 1. Ingresar al detalle de un alojamiento.<br>2. Comprobar que las fechas con reservas existentes se muestren tachadas y en rojo.<br>3. Validar botón de reintento ante fallos de API. | DoubleCalendar carga bloqueos dinámicamente. Botón de reintento funcional si se desconecta la API. | **PASS** |
+| **#24** | Marcar como favorito | 1. Hacer clic en el corazón de un producto sin loguearse (redirección a login).<br>2. Iniciar sesión y presionar corazón en Home (cambia a rojo relleno). | Bloquea usuarios anónimos. Agrega o remueve IDs del localStorage según sesión activa. | **PASS** |
+| **#25** | Listar favoritos | 1. Navegar a `/favoritos` desde el menú de usuario.<br>2. Comprobar listado dinámico.<br>3. Presionar ícono de basura para desmarcar y ver actualización en tiempo real. | Muestra catálogo exclusivo del usuario. La sincronización vía Custom Event actualiza el listado. | **PASS** |
+| **#26** | Bloque de políticas | 1. Entrar en detalle de producto.<br>2. Verificar bloque al final (ancho 100%, título principal subrayado).<br>3. Validar las 3 columnas. | Formato CSS impecable con columnas responsivas y normas estructuradas. | **PASS** |
+| **#27** | Compartir productos | 1. Hacer clic en ícono compartir en cabecera del detalle.<br>2. Seleccionar red social (Twitter/Facebook).<br>3. Escribir mensaje personalizado y confirmar.<br>4. Verificar tarjeta de previsualización. | Despliega modal interactivo con imagen, descripción corta y URL. Redirecciona a redes con URL codificada. | **PASS** |
+| **#28** | Puntuar producto | 1. Loguearse e ingresar reseña de 5 estrellas con comentario.<br>2. Enviar y comprobar recálculo de puntuación media en tiempo real en cabecera y listados. | Guarda review en DB, recalcula promedio (escala 1-10) y actualiza de inmediato el catálogo. | **PASS** |
+| **#29** | Eliminar categoría | 1. Ir a sección categorías en panel Admin.<br>2. Presionar ícono de eliminación en fila.<br>3. Verificar visualización de modal preventivo de alerta.<br>4. Confirmar y verificar borrado. | Modal detiene borrados accidentales y cancela o procede a borrar con borrado físico REST. | **PASS** |
+
+

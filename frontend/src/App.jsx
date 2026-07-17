@@ -5,6 +5,7 @@ import ProductDetail from './pages/ProductDetail';
 import Administration from './pages/Administration';
 import Register from './pages/Register';
 import Login from './pages/Login';
+import Favorites from './pages/Favorites';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="/administracion" element={<Administration />} />
         <Route path="/registro" element={<Register />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/favoritos" element={<Favorites />} />
       </Routes>
     </BrowserRouter>
   );

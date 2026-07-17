@@ -94,6 +94,19 @@ const Header = () => {
                       Administración
                     </Link>
                   )}
+                  <Link 
+                    to="/favoritos" 
+                    style={{
+                      padding: '10px 16px',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      color: 'var(--primary-color)',
+                      textAlign: 'left'
+                    }}
+                    onClick={() => setShowDropdown(false)}
+                  >
+                    Mis Favoritos
+                  </Link>
                   <button 
                     onClick={handleLogout}
                     style={{

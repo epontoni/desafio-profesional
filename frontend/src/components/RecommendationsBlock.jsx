@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Wifi, Waves, MapPin, Star, Heart, Car, Tv, Wind, Dumbbell } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
 
-const RecommendationsBlock = ({ selectedCategory, onClearFilter }) => {
+const RecommendationsBlock = ({ selectedCategory, onClearFilter, searchParams, onClearSearch }) => {
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,14 +14,17 @@ const RecommendationsBlock = ({ selectedCategory, onClearFilter }) => {
   // Tabs: 'random' or 'catalog'
   const [activeTab, setActiveTab] = useState('random');
   
-  // Pagination state for catalog
+  // Pagination state
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   
-  // Overall database count (for filter comparison)
+  // Overall database count
   const [grandTotalProducts, setGrandTotalProducts] = useState(0);
   
+  // Local state for favorites list
+  const [favorites, setFavorites] = useState([]);
+
   const limit = 10;
 
   // Icon mapper for characteristics
@@ -48,6 +54,51 @@ const RecommendationsBlock = ({ selectedCategory, onClearFilter }) => {
     }
   };
 
+  // Load favorites from localStorage
+  const loadFavorites = () => {
+    if (user && user.email) {
+      const stored = localStorage.getItem(`favs_${user.email}`);
+      if (stored) {
+        setFavorites(JSON.parse(stored));
+      } else {
+        setFavorites([]);
+      }
+    } else {
+      setFavorites([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchGrandTotal();
+  }, []);
+
+  // Reload favorites whenever user logs in or out
+  useEffect(() => {
+    loadFavorites();
+  }, [user]);
+
+  // Handle marking as favorite (complying with User Story 24)
+  const toggleFavorite = (productId, e) => {
+    e.stopPropagation(); // prevent card click details trigger
+    if (!user) {
+      alert('Debes iniciar sesión para marcar este producto como favorito.');
+      navigate('/login');
+      return;
+    }
+
+    let updated;
+    if (favorites.includes(productId)) {
+      updated = favorites.filter(id => id !== productId);
+    } else {
+      updated = [...favorites, productId];
+    }
+    setFavorites(updated);
+    localStorage.setItem(`favs_${user.email}`, JSON.stringify(updated));
+
+    // Dispatch global event for real-time favorites page synchronization (complying with User Story 25)
+    window.dispatchEvent(new Event('favoritesChanged'));
+  };
+
   const fetchRandomProducts = async () => {
     setLoading(true);
     setError(null);
@@ -66,14 +117,31 @@ const RecommendationsBlock = ({ selectedCategory, onClearFilter }) => {
     }
   };
 
-  const fetchPaginatedProducts = async (page, categoryFilter) => {
+  const fetchPaginatedProducts = async (page, categoryFilter, searchObj) => {
     setLoading(true);
     setError(null);
     try {
-      let url = `http://localhost:8080/api/products/page?page=${page}&size=${limit}`;
-      if (categoryFilter) {
-        url += `&categoryTitle=${encodeURIComponent(categoryFilter)}`;
+      let url;
+      if (searchObj) {
+        // Advanced Search URL
+        url = `http://localhost:8080/api/products/search/page?page=${page}&size=${limit}`;
+        if (searchObj.location) {
+          url += `&location=${encodeURIComponent(searchObj.location)}`;
+        }
+        if (searchObj.startDate) {
+          url += `&startDate=${searchObj.startDate}`;
+        }
+        if (searchObj.endDate) {
+          url += `&endDate=${searchObj.endDate}`;
+        }
+      } else {
+        // Standard or category filter
+        url = `http://localhost:8080/api/products/page?page=${page}&size=${limit}`;
+        if (categoryFilter) {
+          url += `&categoryTitle=${encodeURIComponent(categoryFilter)}`;
+        }
       }
+
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Error al conectar con la API');
@@ -90,25 +158,24 @@ const RecommendationsBlock = ({ selectedCategory, onClearFilter }) => {
     }
   };
 
+  // Sync category or search filter changes with view
   useEffect(() => {
-    fetchGrandTotal();
-  }, []);
-
-  // Sync category filter changes with view
-  useEffect(() => {
-    if (selectedCategory) {
-      // Force catalog view when a filter is applied to display count and pages
+    if (searchParams) {
       setActiveTab('catalog');
       setCurrentPage(0);
-      fetchPaginatedProducts(0, selectedCategory);
+      fetchPaginatedProducts(0, null, searchParams);
+    } else if (selectedCategory) {
+      setActiveTab('catalog');
+      setCurrentPage(0);
+      fetchPaginatedProducts(0, selectedCategory, null);
     } else {
       if (activeTab === 'random') {
         fetchRandomProducts();
       } else {
-        fetchPaginatedProducts(currentPage, null);
+        fetchPaginatedProducts(currentPage, null, null);
       }
     }
-  }, [selectedCategory, activeTab, currentPage]);
+  }, [selectedCategory, searchParams, activeTab, currentPage]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -144,9 +211,30 @@ const RecommendationsBlock = ({ selectedCategory, onClearFilter }) => {
         <div style={{ textAlign: 'left' }}>
           <h2 className="section-title" style={{ margin: 0 }}>Recomendaciones</h2>
           
-          {/* Display search and filter counts (complying with User Story 20) */}
+          {/* Display search and filter counts (complying with User Story 20 & 22) */}
           <div style={{ marginTop: '6px', fontSize: '13px', color: 'var(--text-medium)', fontWeight: 600 }}>
-            {selectedCategory ? (
+            {searchParams ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                Búsqueda: <strong style={{ color: 'var(--accent-color)' }}>
+                  {searchParams.location || 'Cualquier destino'} 
+                  {searchParams.startDate ? ` (${searchParams.startDate} a ${searchParams.endDate})` : ''}
+                </strong>
+                <span>({products.length} de {totalElements} encontrados, sobre {grandTotalProducts} totales)</span>
+                <button 
+                  onClick={onClearSearch}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--error-color)',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    textDecoration: 'underline'
+                  }}
+                >
+                  Limpiar búsqueda
+                </button>
+              </span>
+            ) : selectedCategory ? (
               <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 Filtrado por: <strong style={{ color: 'var(--accent-color)' }}>{selectedCategory}</strong>
                 <span>({products.length} de {totalElements} cumpliendo el filtro, sobre {grandTotalProducts} totales)</span>
@@ -170,8 +258,8 @@ const RecommendationsBlock = ({ selectedCategory, onClearFilter }) => {
           </div>
         </div>
         
-        {/* Toggle tabs (disabled if category filter is active since catalog is enforced) */}
-        {!selectedCategory && (
+        {/* Toggle tabs (disabled if filters are active since catalog is enforced) */}
+        {!selectedCategory && !searchParams && (
           <div style={{ display: 'flex', gap: '8px' }}>
             <button 
               className={`btn-outline ${activeTab === 'random' ? 'active' : ''}`}
@@ -205,79 +293,97 @@ const RecommendationsBlock = ({ selectedCategory, onClearFilter }) => {
         <div className="form-error" style={{ textAlign: 'center', margin: '20px auto', maxWidth: '600px' }}>
           {error}
           <div style={{ marginTop: '10px' }}>
-            <button className="btn-outline" onClick={() => activeTab === 'random' ? fetchRandomProducts() : fetchPaginatedProducts(currentPage, selectedCategory)}>
+            <button className="btn-outline" onClick={() => activeTab === 'random' ? fetchRandomProducts() : fetchPaginatedProducts(currentPage, selectedCategory, searchParams)}>
               Reintentar
             </button>
           </div>
         </div>
       ) : products.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-medium)', fontWeight: 600 }}>
-          No se encontraron alojamientos bajo esta categoría.
+          No se encontraron alojamientos bajo los criterios ingresados.
         </div>
       ) : (
         <>
           <div className="recommendations-grid">
-            {products.map((prod) => (
-              <div key={prod.id} className="product-card">
-                <div className="product-card-img-wrapper">
-                  <img 
-                    src={prod.images && prod.images.length > 0 ? prod.images[0] : 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500'} 
-                    alt={prod.name} 
-                    className="product-card-img" 
-                  />
-                  <button className="product-card-fav" title="Guardar en favoritos">
-                    <Heart size={18} />
-                  </button>
-                </div>
-                
-                <div className="product-card-info">
-                  <div>
-                    <div className="product-header-row">
-                      <div className="product-category-stars">
-                        <span className="product-card-category">{prod.category ? prod.category.title : 'Hotel'}</span>
-                        <div className="product-stars">
-                          {renderStars(prod.rating || 8.0)}
+            {products.map((prod) => {
+              const isFav = favorites.includes(prod.id);
+              return (
+                <div key={prod.id} className="product-card" onClick={() => navigate(`/producto/${prod.id}`)}>
+                  <div className="product-card-img-wrapper">
+                    <img 
+                      src={prod.images && prod.images.length > 0 ? prod.images[0] : 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500'} 
+                      alt={prod.name} 
+                      className="product-card-img" 
+                    />
+                    {/* Favorite click action (complying with User Story 24) */}
+                    <button 
+                      className="product-card-fav" 
+                      onClick={(e) => toggleFavorite(prod.id, e)}
+                      title={isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+                      style={{
+                        backgroundColor: isFav ? 'var(--white)' : 'rgba(255, 255, 255, 0.7)',
+                        color: isFav ? 'var(--error-color)' : 'var(--primary-color)',
+                        borderColor: isFav ? 'var(--error-color)' : 'transparent',
+                        borderWidth: '1px',
+                        borderStyle: 'solid'
+                      }}
+                    >
+                      <Heart size={18} fill={isFav ? 'currentColor' : 'none'} />
+                    </button>
+                  </div>
+                  
+                  <div className="product-card-info">
+                    <div>
+                      <div className="product-header-row">
+                        <div className="product-category-stars">
+                          <span className="product-card-category">{prod.category ? prod.category.title : 'Hotel'}</span>
+                          <div className="product-stars">
+                            {renderStars(prod.rating || 8.0)}
+                          </div>
+                        </div>
+                        <div className="product-rating-box">
+                          <span className="product-rating-num">{prod.rating ? prod.rating.toFixed(1) : '8.0'}</span>
+                          <span className="product-rating-text">{prod.ratingText || 'Bueno'}</span>
                         </div>
                       </div>
-                      <div className="product-rating-box">
-                        <span className="product-rating-num">{prod.rating ? prod.rating.toFixed(1) : '8.0'}</span>
-                        <span className="product-rating-text">{prod.ratingText || 'Bueno'}</span>
+                      
+                      <h3 className="product-card-name">{prod.name}</h3>
+                      
+                      <div className="product-card-loc">
+                        <MapPin size={14} />
+                        <span>{prod.location || 'Argentina'}</span>
+                        <span className="product-loc-link">Mostrar en el mapa</span>
+                      </div>
+
+                      {/* Dynamic Amenities Render */}
+                      <div className="product-card-amenities" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', margin: '10px 0' }}>
+                        {prod.characteristics && prod.characteristics.map(char => (
+                          <span key={char.id} style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--primary-color)' }}>
+                            {renderAmenityIcon(char.icon, char.name)}
+                          </span>
+                        ))}
                       </div>
                     </div>
-                    
-                    <h3 className="product-card-name">{prod.name}</h3>
-                    
-                    <div className="product-card-loc">
-                      <MapPin size={14} />
-                      <span>{prod.location || 'Argentina'}</span>
-                      <span className="product-loc-link">Mostrar en el mapa</span>
-                    </div>
 
-                    {/* Dynamic Amenities Render (complying with User Story 17/18) */}
-                    <div className="product-card-amenities" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', margin: '10px 0' }}>
-                      {prod.characteristics && prod.characteristics.map(char => (
-                        <span key={char.id} style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--primary-color)' }}>
-                          {renderAmenityIcon(char.icon, char.name)}
-                        </span>
-                      ))}
-                    </div>
+                    <p className="product-card-desc">{prod.description}</p>
+                    
+                    <button 
+                      className="btn-detail"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/producto/${prod.id}`);
+                      }}
+                    >
+                      Ver detalle
+                    </button>
                   </div>
-
-                  <p className="product-card-desc">{prod.description}</p>
-                  
-                  <button 
-                    className="btn-detail"
-                    onClick={() => navigate(`/producto/${prod.id}`)}
-                  >
-                    Ver detalle
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          {/* Render Pagination when in Catalog mode or when Category filter is active */}
-          {((activeTab === 'catalog' || selectedCategory) && totalPages > 1) && (
+          {/* Render Pagination */}
+          {((activeTab === 'catalog' || selectedCategory || searchParams) && totalPages > 1) && (
             <div className="pagination-container">
               <button 
                 className="pagination-btn" 

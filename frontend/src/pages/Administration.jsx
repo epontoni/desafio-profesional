@@ -51,6 +51,11 @@ const Administration = () => {
   const [deleteProductName, setDeleteProductName] = useState('');
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
+  // --- Category Deletion Modal State ---
+  const [deleteCategoryId, setDeleteCategoryId] = useState(null);
+  const [deleteCategoryTitle, setDeleteCategoryTitle] = useState('');
+  const [isConfirmDeleteCatOpen, setIsConfirmDeleteCatOpen] = useState(false);
+
   // Screen resize handler
   useEffect(() => {
     const handleResize = () => {
@@ -254,13 +259,27 @@ const Administration = () => {
     }
   };
 
-  const handleDeleteCategory = async (id) => {
-    if (!window.confirm('¿Seguro que deseas eliminar esta categoría? Se desvinculará de los alojamientos relacionados.')) return;
+  const triggerCategoryDelete = (id, title) => {
+    setDeleteCategoryId(id);
+    setDeleteCategoryTitle(title);
+    setIsConfirmDeleteCatOpen(true);
+  };
+
+  const handleCategoryDeleteConfirm = async () => {
+    if (!deleteCategoryId) return;
     try {
-      const res = await fetch(`http://localhost:8080/api/categories/${id}`, { method: 'DELETE' });
-      if (res.ok) fetchCategories();
+      const res = await fetch(`http://localhost:8080/api/categories/${deleteCategoryId}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchCategories();
+      } else {
+        throw new Error();
+      }
     } catch (err) {
-      console.error(err);
+      alert('No se pudo eliminar la categoría. Verifique que no esté vinculada a alojamientos.');
+    } finally {
+      setIsConfirmDeleteCatOpen(false);
+      setDeleteCategoryId(null);
+      setDeleteCategoryTitle('');
     }
   };
 
@@ -588,7 +607,7 @@ const Administration = () => {
                           <td style={{ fontWeight: 700 }}>{cat.title}</td>
                           <td style={{ fontSize: '12px', color: 'var(--text-medium)' }}>{cat.description}</td>
                           <td style={{ textAlign: 'right' }}>
-                            <button className="btn-delete" onClick={() => handleDeleteCategory(cat.id)}>
+                            <button className="btn-delete" onClick={() => triggerCategoryDelete(cat.id, cat.title)}>
                               <Trash2 size={12} />
                             </button>
                           </td>
@@ -733,6 +752,23 @@ const Administration = () => {
             <div className="confirm-modal-actions">
               <button className="btn-confirm-yes" onClick={handleProductDeleteConfirm}>Confirmar</button>
               <button className="btn-confirm-no" onClick={() => setIsConfirmDeleteOpen(false)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Delete Confirmation Dialog Modal (complying with User Story 29) */}
+      {isConfirmDeleteCatOpen && (
+        <div className="confirm-modal-overlay">
+          <div className="confirm-modal-box">
+            <h3 className="confirm-modal-title">¿Eliminar Categoría?</h3>
+            <p className="confirm-modal-text">
+              ¿Estás seguro de que deseas eliminar la categoría **"{deleteCategoryTitle}"**?
+              Si hay alojamientos asociados a esta categoría, la eliminación podría desvincularlos o fallar si existen dependencias.
+            </p>
+            <div className="confirm-modal-actions">
+              <button className="btn-confirm-yes" onClick={handleCategoryDeleteConfirm}>Confirmar</button>
+              <button className="btn-confirm-no" onClick={() => setIsConfirmDeleteCatOpen(false)}>Cancelar</button>
             </div>
           </div>
         </div>

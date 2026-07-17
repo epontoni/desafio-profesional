@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,6 +46,14 @@ public class ProductService {
         return productRepository.findByCategoryTitle(title, pageable);
     }
 
+    public List<Product> searchProducts(String location, LocalDate startDate, LocalDate endDate) {
+        return productRepository.searchProducts(location, startDate, endDate);
+    }
+
+    public Page<Product> searchProductsPaginated(String location, LocalDate startDate, LocalDate endDate, Pageable pageable) {
+        return productRepository.searchProductsPaginated(location, startDate, endDate, pageable);
+    }
+
     public Product getProductById(Long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado con el id: " + id));
@@ -55,6 +64,14 @@ public class ProductService {
             throw new IllegalArgumentException("El nombre del producto ya está en uso");
         }
         return productRepository.save(product);
+    }
+
+    public void updateProductRating(Long id, double newRating, String newRatingText) {
+        productRepository.findById(id).ifPresent(p -> {
+            p.setRating(newRating);
+            p.setRatingText(newRatingText);
+            productRepository.save(p);
+        });
     }
 
     public void deleteProduct(Long id) {
