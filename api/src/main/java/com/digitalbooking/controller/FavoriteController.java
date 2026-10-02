@@ -28,14 +28,14 @@ public class FavoriteController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<FavoriteResponse>> getUserFavorites(Authentication authentication) {
         String email = authentication.getName();
         return ResponseEntity.ok(favoriteService.getUserFavorites(email));
     }
 
     @PostMapping("/{productId}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<FavoriteResponse> addFavorite(@PathVariable Long productId, Authentication authentication) {
         String email = authentication.getName();
         FavoriteResponse response = favoriteService.addFavorite(productId, email);
@@ -43,7 +43,7 @@ public class FavoriteController {
     }
 
     @DeleteMapping("/{productId}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> removeFavorite(@PathVariable Long productId, Authentication authentication) {
         String email = authentication.getName();
         favoriteService.removeFavorite(productId, email);
@@ -51,7 +51,7 @@ public class FavoriteController {
     }
 
     @GetMapping("/check/{productId}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, Boolean>> isFavorite(@PathVariable Long productId, Authentication authentication) {
         String email = authentication.getName();
         boolean isFav = favoriteService.isFavorite(productId, email);
