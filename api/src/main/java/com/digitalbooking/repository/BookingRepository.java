@@ -13,6 +13,10 @@ import java.util.List;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByProductId(Long productId);
 
+    List<Booking> findByProductIdOrderByStartDateDesc(Long productId);
+
+    List<Booking> findAllByOrderByStartDateDesc();
+
     List<Booking> findByUserEmailOrderByStartDateDesc(String email);
 
     // Checks if there is any booking for a product overlapping with the given range [startDate, endDate]

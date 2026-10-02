@@ -1,7 +1,9 @@
 package com.digitalbooking.controller;
 
-import com.digitalbooking.model.Product;
+import com.digitalbooking.dto.ProductRequest;
+import com.digitalbooking.dto.ProductResponse;
 import com.digitalbooking.service.ProductService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -9,12 +11,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/products")
@@ -29,7 +30,7 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Product>> getAllProducts(@RequestParam(required = false) String categoryTitle) {
+    public ResponseEntity<List<ProductResponse>> getAllProducts(@RequestParam(required = false) String categoryTitle) {
         if (categoryTitle != null && !categoryTitle.trim().isEmpty()) {
             return ResponseEntity.ok(productService.getProductsByCategoryTitle(categoryTitle));
         }
@@ -37,12 +38,12 @@ public class ProductController {
     }
 
     @GetMapping("/random")
-    public ResponseEntity<List<Product>> getRandomRecommendations() {
+    public ResponseEntity<List<ProductResponse>> getRandomRecommendations() {
         return ResponseEntity.ok(productService.getRandomRecommendations());
     }
 
     @GetMapping("/page")
-    public ResponseEntity<Page<Product>> getProductsPaginated(
+    public ResponseEntity<Page<ProductResponse>> getProductsPaginated(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String categoryTitle) {
@@ -53,18 +54,16 @@ public class ProductController {
         return ResponseEntity.ok(productService.getProductsPaginated(pageable));
     }
 
-    // Advanced search: lists all matching available products
     @GetMapping("/search")
-    public ResponseEntity<List<Product>> searchProducts(
+    public ResponseEntity<List<ProductResponse>> searchProducts(
             @RequestParam(required = false) String location,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         return ResponseEntity.ok(productService.searchProducts(location, startDate, endDate));
     }
 
-    // Advanced search: paginated
     @GetMapping("/search/page")
-    public ResponseEntity<Page<Product>> searchProductsPaginated(
+    public ResponseEntity<Page<ProductResponse>> searchProductsPaginated(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String location,
@@ -75,38 +74,21 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getProductById(@PathVariable Long id) {
-        try {
-            Product product = productService.getProductById(id);
-            return ResponseEntity.ok(product);
-        } catch (IllegalArgumentException e) {
-            Map<String, String> response = new HashMap<>();
-            response.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
+    public ResponseEntity<ProductResponse> getProductById(@PathVariable Long id) {
+        return ResponseEntity.ok(productService.getProductById(id));
     }
 
     @PostMapping
-    public ResponseEntity<?> createProduct(@RequestBody Product product) {
-        try {
-            Product savedProduct = productService.saveProduct(product);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedProduct);
-        } catch (IllegalArgumentException e) {
-            Map<String, String> response = new HashMap<>();
-            response.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody ProductRequest request) {
+        ProductResponse savedProduct = productService.saveProduct(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedProduct);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
-        try {
-            productService.deleteProduct(id);
-            return ResponseEntity.ok().build();
-        } catch (IllegalArgumentException e) {
-            Map<String, String> response = new HashMap<>();
-            response.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        productService.deleteProduct(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -1,66 +1,57 @@
 package com.digitalbooking.controller;
 
-import com.digitalbooking.model.Characteristic;
-import com.digitalbooking.repository.CharacteristicRepository;
+import com.digitalbooking.dto.CharacteristicRequest;
+import com.digitalbooking.dto.CharacteristicResponse;
+import com.digitalbooking.service.CharacteristicService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/characteristics")
 @CrossOrigin(origins = "*")
 public class CharacteristicController {
 
-    private final CharacteristicRepository characteristicRepository;
+    private final CharacteristicService characteristicService;
 
     @Autowired
-    public CharacteristicController(CharacteristicRepository characteristicRepository) {
-        this.characteristicRepository = characteristicRepository;
+    public CharacteristicController(CharacteristicService characteristicService) {
+        this.characteristicService = characteristicService;
     }
 
     @GetMapping
-    public ResponseEntity<List<Characteristic>> getAllCharacteristics() {
-        return ResponseEntity.ok(characteristicRepository.findAll());
+    public ResponseEntity<List<CharacteristicResponse>> getAllCharacteristics() {
+        return ResponseEntity.ok(characteristicService.getAllCharacteristics());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CharacteristicResponse> getCharacteristicById(@PathVariable Long id) {
+        return ResponseEntity.ok(characteristicService.getCharacteristicById(id));
     }
 
     @PostMapping
-    public ResponseEntity<?> createCharacteristic(@RequestBody Characteristic characteristic) {
-        if (characteristicRepository.existsByName(characteristic.getName())) {
-            Map<String, String> response = new HashMap<>();
-            response.put("error", "La característica ya existe con el nombre proporcionado");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-        Characteristic saved = characteristicRepository.save(characteristic);
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CharacteristicResponse> createCharacteristic(@Valid @RequestBody CharacteristicRequest request) {
+        CharacteristicResponse response = characteristicService.createCharacteristic(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateCharacteristic(@PathVariable Long id, @RequestBody Characteristic details) {
-        return characteristicRepository.findById(id).map(existing -> {
-            if (!existing.getName().equals(details.getName()) && 
-                    characteristicRepository.existsByName(details.getName())) {
-                Map<String, String> response = new HashMap<>();
-                response.put("error", "Ya existe otra característica con ese nombre");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-            }
-            existing.setName(details.getName());
-            existing.setIcon(details.getIcon());
-            Characteristic updated = characteristicRepository.save(existing);
-            return ResponseEntity.ok(updated);
-        }).orElseGet(() -> ResponseEntity.notFound().build());
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CharacteristicResponse> updateCharacteristic(@PathVariable Long id, @Valid @RequestBody CharacteristicRequest request) {
+        CharacteristicResponse response = characteristicService.updateCharacteristic(id, request);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteCharacteristic(@PathVariable Long id) {
-        if (!characteristicRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        characteristicRepository.deleteById(id);
-        return ResponseEntity.ok().build();
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteCharacteristic(@PathVariable Long id) {
+        characteristicService.deleteCharacteristic(id);
+        return ResponseEntity.noContent().build();
     }
 }

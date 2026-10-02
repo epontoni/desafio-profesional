@@ -1,6 +1,8 @@
 package com.digitalbooking.dto;
 
 public class AuthResponse {
+    private String token;
+    private String tokenType = "Bearer";
     private Long id;
     private String firstName;
     private String lastName;
@@ -10,12 +12,30 @@ public class AuthResponse {
     public AuthResponse() {
     }
 
-    public AuthResponse(Long id, String firstName, String lastName, String email, String role) {
+    public AuthResponse(String token, Long id, String firstName, String lastName, String email, String role) {
+        this.token = token;
+        this.tokenType = "Bearer";
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.role = role;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public String getTokenType() {
+        return tokenType;
+    }
+
+    public void setTokenType(String tokenType) {
+        this.tokenType = tokenType;
     }
 
     public Long getId() {

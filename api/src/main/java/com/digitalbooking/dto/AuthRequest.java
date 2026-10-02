@@ -1,7 +1,15 @@
 package com.digitalbooking.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+
 public class AuthRequest {
+
+    @NotBlank(message = "El correo electrónico es obligatorio.")
+    @Email(message = "El formato de correo electrónico es inválido.")
     private String email;
+
+    @NotBlank(message = "La contraseña es obligatoria.")
     private String password;
 
     public AuthRequest() {

@@ -105,20 +105,25 @@ const BookingForm = () => {
         endDate,
         estimatedArrivalTime: arrivalTime,
         notes: notes,
+        productId: parseInt(id),
         product: { id: parseInt(id) },
-        user: { id: user.id }
+        userId: user?.id,
+        user: { id: user?.id }
       };
 
       const response = await fetch('http://localhost:8080/api/bookings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {})
+        },
         body: JSON.stringify(payload)
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Ocurrió un error al procesar su reserva.');
+        throw new Error(data.message || data.error || 'Ocurrió un error al procesar su reserva.');
       }
 
       // Success

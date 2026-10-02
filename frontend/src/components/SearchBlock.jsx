@@ -97,96 +97,148 @@ const SearchBlock = ({ onSearch }) => {
     <div className="search-block" ref={containerRef}>
       <div className="container search-container">
         <h1 className="search-title">Busca ofertas en hoteles, casas y mucho más</h1>
-        <p className="search-subtitle" style={{ color: 'var(--white)', opacity: 0.9, marginTop: '-12px', marginBottom: '20px', fontWeight: 500 }}>
+        <p className="search-subtitle">
           Descubre el lugar ideal reservando en base a tu destino y fechas disponibles
         </p>
 
         <form className="search-form" onSubmit={handleSearchSubmit}>
           {/* Location field with Autocomplete Suggestions */}
-          <div className="search-input-group" style={{ position: 'relative' }}>
-            <MapPin className="search-icon" />
-            <input 
-              type="text" 
-              className="search-field"
-              placeholder="¿A dónde vamos?" 
-              value={locationInput}
-              onChange={(e) => handleLocationChange(e.target.value)}
-              onFocus={() => {
-                if (locationInput.trim() !== '') setShowSuggestions(true);
-              }}
-            />
+          <div className={`search-box ${locationInput ? 'has-value' : ''}`}>
+            <div className="search-box-icon">
+              <MapPin size={20} />
+            </div>
+            <div className="search-box-content">
+              <span className="search-box-label">Destino</span>
+              <input 
+                type="text" 
+                className="search-field"
+                placeholder="¿A dónde vamos?" 
+                value={locationInput}
+                onChange={(e) => handleLocationChange(e.target.value)}
+                onFocus={() => {
+                  if (locationInput.trim() !== '') setShowSuggestions(true);
+                }}
+              />
+            </div>
             {locationInput && (
               <button 
                 type="button" 
+                className="search-box-clear"
                 onClick={() => {
                   setLocationInput('');
                   setSuggestions([]);
                   setShowSuggestions(false);
                 }}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', position: 'absolute', right: '14px', top: '16px', color: 'var(--text-light)' }}
+                aria-label="Limpiar destino"
               >
-                <X size={16} />
+                <X size={15} />
               </button>
             )}
 
             {/* Suggestions dropdown */}
             {showSuggestions && suggestions.length > 0 && (
-              <ul className="search-suggestions-dropdown">
-                {suggestions.map((loc, idx) => (
-                  <li 
-                    key={idx} 
-                    className="search-suggestion-item"
-                    onClick={() => handleSelectSuggestion(loc)}
-                  >
-                    <MapPin size={16} style={{ color: 'var(--accent-color)', marginRight: '8px' }} />
-                    <span style={{ fontWeight: 600 }}>{loc}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="search-dropdown-menu">
+                <div className="search-dropdown-header">Destinos populares</div>
+                <ul className="search-suggestions-list">
+                  {suggestions.map((loc, idx) => (
+                    <li 
+                      key={idx} 
+                      className="search-suggestion-item"
+                      onClick={() => handleSelectSuggestion(loc)}
+                    >
+                      <div className="suggestion-icon-wrap">
+                        <MapPin size={16} />
+                      </div>
+                      <div className="suggestion-info">
+                        <span className="suggestion-title">{loc}</span>
+                        <span className="suggestion-subtitle">Argentina</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
 
           {/* Date range picker selector */}
-          <div className="search-input-group" style={{ position: 'relative' }}>
-            <Calendar className="search-icon" />
-            <input 
-              type="text" 
-              className="search-field"
-              placeholder="Check in - Check out" 
-              readOnly
-              value={formatDisplayDates()}
-              onClick={() => setShowCalendar(!showCalendar)}
-              style={{ cursor: 'pointer' }}
-            />
+          <div 
+            className={`search-box search-box-clickable ${startDate ? 'has-value' : ''}`}
+            onClick={() => setShowCalendar(!showCalendar)}
+          >
+            <div className="search-box-icon">
+              <Calendar size={20} />
+            </div>
+            <div className="search-box-content">
+              <span className="search-box-label">Fechas</span>
+              <div className="search-date-display">
+                {startDate ? (
+                  <span className="date-selected-text">
+                    {startDate} {endDate ? `— ${endDate}` : '(Check-out pendiente)'}
+                  </span>
+                ) : (
+                  <span className="date-placeholder-text">Check in — Check out</span>
+                )}
+              </div>
+            </div>
             
             {(startDate || endDate) && (
               <button 
                 type="button" 
-                onClick={() => {
+                className="search-box-clear"
+                onClick={(e) => {
+                  e.stopPropagation();
                   setStartDate(null);
                   setEndDate(null);
                 }}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', position: 'absolute', right: '14px', top: '16px', color: 'var(--text-light)' }}
+                aria-label="Limpiar fechas"
               >
-                <X size={16} />
+                <X size={15} />
               </button>
             )}
 
             {/* Double Calendar Popup Overlay */}
             {showCalendar && (
-              <div className="search-calendar-popup">
+              <div className="search-calendar-popup" onClick={(e) => e.stopPropagation()}>
+                <div className="calendar-popup-header">
+                  <div className="calendar-popup-title">
+                    <h4>Selecciona tus fechas</h4>
+                    <p>Consulta tarifas y disponibilidad en tiempo real</p>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="calendar-popup-close"
+                    onClick={() => setShowCalendar(false)}
+                    aria-label="Cerrar calendario"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
                 <DoubleCalendar 
                   selectedStart={startDate}
                   selectedEnd={endDate}
                   onRangeSelect={handleRangeSelect}
                   readOnly={false}
                 />
+                <div className="calendar-popup-footer">
+                  <div className="calendar-status-legend">
+                    <span className="legend-item"><span className="legend-dot available"></span> Disponible</span>
+                    <span className="legend-item"><span className="legend-dot occupied"></span> Ocupado</span>
+                    <span className="legend-item"><span className="legend-dot selected"></span> Seleccionado</span>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="btn-apply-dates"
+                    onClick={() => setShowCalendar(false)}
+                  >
+                    Listo
+                  </button>
+                </div>
               </div>
             )}
           </div>
 
           <button type="submit" className="btn-search">
-            <Search size={18} />
+            <Search size={20} />
             <span>Buscar</span>
           </button>
         </form>

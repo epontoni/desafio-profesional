@@ -5,6 +5,8 @@ import { AuthContext } from '../context/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
+import { favoriteService } from '../services/favoriteService';
+
 const Favorites = () => {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
@@ -22,32 +24,33 @@ const Favorites = () => {
     setLoading(true);
     setError(null);
     try {
-      const stored = localStorage.getItem(`favs_${user.email}`);
-      const favIds = stored ? JSON.parse(stored) : [];
-
-      if (favIds.length === 0) {
-        setFavoritesList([]);
-        setLoading(false);
-        return;
-      }
-
-      // Fetch details in parallel for each favorite ID
-      const fetchPromises = favIds.map(async (id) => {
-        try {
-          const res = await fetch(`http://localhost:8080/api/products/${id}`);
-          if (res.ok) {
-            return await res.json();
-          }
-          return null;
-        } catch (e) {
-          console.error(`Error loading favorite product ${id}:`, e);
-          return null;
+      if (user.token) {
+        const backendFavs = await favoriteService.getFavorites(user.token);
+        const products = backendFavs.map(fav => fav.product).filter(Boolean);
+        setFavoritesList(products);
+        // Sync local cache
+        const ids = products.map(p => p.id);
+        localStorage.setItem(`favs_${user.email}`, JSON.stringify(ids));
+      } else {
+        const stored = localStorage.getItem(`favs_${user.email}`);
+        const favIds = stored ? JSON.parse(stored) : [];
+        if (favIds.length === 0) {
+          setFavoritesList([]);
+          setLoading(false);
+          return;
         }
-      });
-
-      const results = await Promise.all(fetchPromises);
-      const validProducts = results.filter(p => p !== null);
-      setFavoritesList(validProducts);
+        const fetchPromises = favIds.map(async (id) => {
+          try {
+            const res = await fetch(`http://localhost:8080/api/products/${id}`);
+            if (res.ok) return await res.json();
+            return null;
+          } catch (e) {
+            return null;
+          }
+        });
+        const results = await Promise.all(fetchPromises);
+        setFavoritesList(results.filter(p => p !== null));
+      }
     } catch (err) {
       console.error(err);
       setError('Ocurrió un error al cargar tus alojamientos favoritos.');
@@ -64,7 +67,6 @@ const Favorites = () => {
 
     loadFavoritesDetails();
 
-    // Listen to changes triggered from other sections (real-time sync)
     const handleSync = () => {
       loadFavoritesDetails();
     };
@@ -73,17 +75,22 @@ const Favorites = () => {
     return () => window.removeEventListener('favoritesChanged', handleSync);
   }, [user, navigate]);
 
-  const removeFavorite = (productId) => {
+  const removeFavorite = async (productId) => {
     if (!user) return;
-    const stored = localStorage.getItem(`favs_${user.email}`);
-    const favIds = stored ? JSON.parse(stored) : [];
-    const updated = favIds.filter(id => id !== productId);
+    try {
+      if (user.token) {
+        await favoriteService.removeFavorite(productId, user.token);
+      }
+      const stored = localStorage.getItem(`favs_${user.email}`);
+      const favIds = stored ? JSON.parse(stored) : [];
+      const updated = favIds.filter(id => id !== productId);
+      localStorage.setItem(`favs_${user.email}`, JSON.stringify(updated));
 
-    localStorage.setItem(`favs_${user.email}`, JSON.stringify(updated));
-    setFavoritesList(favoritesList.filter(p => p.id !== productId));
-    
-    // Sync other components
-    window.dispatchEvent(new Event('favoritesChanged'));
+      setFavoritesList(prev => prev.filter(p => p.id !== productId));
+      window.dispatchEvent(new Event('favoritesChanged'));
+    } catch (err) {
+      console.error('Error removing favorite:', err);
+    }
   };
 
   const renderStars = (rating) => {

@@ -1,42 +1,56 @@
 package com.digitalbooking.controller;
 
-import com.digitalbooking.model.User;
-import com.digitalbooking.repository.UserRepository;
+import com.digitalbooking.dto.UserResponse;
+import com.digitalbooking.dto.UserUpdateRequest;
+import com.digitalbooking.dto.UserPasswordUpdateRequest;
+import com.digitalbooking.dto.UserRoleUpdateRequest;
+import com.digitalbooking.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "*")
 public class UserController {
 
-    private final UserRepository userRepository;
+    private final UserService userService;
 
     @Autowired
-    public UserController(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(userRepository.findAll());
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @PutMapping("/{id}/role")
-    public ResponseEntity<?> updateUserRole(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        String newRole = body.get("role");
-        if (newRole == null || (!newRole.equals("ROLE_USER") && !newRole.equals("ROLE_ADMIN"))) {
-            return ResponseEntity.badRequest().body("Rol inválido. Debe ser ROLE_USER o ROLE_ADMIN");
-        }
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> updateUserRole(@PathVariable Long id, @Valid @RequestBody UserRoleUpdateRequest request) {
+        return ResponseEntity.ok(userService.updateUserRole(id, request));
+}
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @Valid @RequestBody UserUpdateRequest request) {
+        return ResponseEntity.ok(userService.updateUser(id, request));
+    }
 
-        return userRepository.findById(id).map(user -> {
-            user.setRole(newRole);
-            User updated = userRepository.save(user);
-            return ResponseEntity.ok(updated);
-        }).orElseGet(() -> ResponseEntity.notFound().build());
+    @PutMapping("/{id}/password")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<UserResponse> changePassword(@PathVariable Long id, @Valid @RequestBody UserPasswordUpdateRequest request) {
+        return ResponseEntity.ok(userService.changePassword(id, request));
     }
 }

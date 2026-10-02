@@ -23,7 +23,7 @@ public class Product {
     private Category category;
 
     private String location;
-    private double rating;
+    private Double rating = 0.0;
     private String ratingText;
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -42,12 +42,12 @@ public class Product {
     public Product() {
     }
 
-    public Product(String name, String description, Category category, String location, double rating, String ratingText, List<Characteristic> characteristics, List<String> images) {
+    public Product(String name, String description, Category category, String location, Double rating, String ratingText, List<Characteristic> characteristics, List<String> images) {
         this.name = name;
         this.description = description;
         this.category = category;
         this.location = location;
-        this.rating = rating;
+        this.rating = rating != null ? rating : 0.0;
         this.ratingText = ratingText;
         this.characteristics = characteristics;
         this.images = images;
@@ -94,12 +94,12 @@ public class Product {
         this.location = location;
     }
 
-    public double getRating() {
+    public Double getRating() {
         return rating;
     }
 
-    public void setRating(double rating) {
-        this.rating = rating;
+    public void setRating(Double rating) {
+        this.rating = rating != null ? rating : 0.0;
     }
 
     public String getRatingText() {

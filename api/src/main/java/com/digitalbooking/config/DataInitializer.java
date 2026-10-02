@@ -1,10 +1,11 @@
 package com.digitalbooking.config;
 
-import com.digitalbooking.controller.AuthController;
 import com.digitalbooking.model.*;
 import com.digitalbooking.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -13,6 +14,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Component
+@Profile("dev")
 public class DataInitializer implements CommandLineRunner {
 
     private final ProductRepository productRepository;
@@ -21,6 +23,7 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
     private final ReviewRepository reviewRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public DataInitializer(ProductRepository productRepository, 
@@ -28,13 +31,15 @@ public class DataInitializer implements CommandLineRunner {
                            CharacteristicRepository characteristicRepository,
                            UserRepository userRepository,
                            BookingRepository bookingRepository,
-                           ReviewRepository reviewRepository) {
+                           ReviewRepository reviewRepository,
+                           PasswordEncoder passwordEncoder) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.characteristicRepository = characteristicRepository;
         this.userRepository = userRepository;
         this.bookingRepository = bookingRepository;
         this.reviewRepository = reviewRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -65,8 +70,8 @@ public class DataInitializer implements CommandLineRunner {
         User admin = null;
         User normalUser = null;
         if (userRepository.count() == 0) {
-            String hashedAdminPass = AuthController.hashPassword("admin123");
-            String hashedUserPass = AuthController.hashPassword("user123");
+            String hashedAdminPass = passwordEncoder.encode("admin123");
+            String hashedUserPass = passwordEncoder.encode("user123");
 
             admin = new User("Admin", "Digital", "admin@digitalbooking.com", hashedAdminPass, "ROLE_ADMIN");
             normalUser = new User("Juan", "Pérez", "user@digitalbooking.com", hashedUserPass, "ROLE_USER");

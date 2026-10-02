@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, List, Trash2, MonitorOff, ArrowLeft, Users, Layers, Settings, ShieldAlert, X } from 'lucide-react';
+import { 
+  Plus, List, Trash2, MonitorOff, ArrowLeft, Users, Layers, 
+  Settings, ShieldAlert, X, Calendar, Search, Building2, 
+  User as UserIcon, Clock, Filter, Eye, AlertCircle, MapPin,
+  ChevronLeft, ChevronRight
+} from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -12,7 +17,10 @@ const Administration = () => {
   // Responsiveness blocker state
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  // Active view: 'list', 'add_product', 'categories', 'characteristics', 'users'
+  // Sidebar collapsible state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Active view: 'list', 'bookings', 'add_product', 'categories', 'characteristics', 'users'
   const [activeSection, setActiveSection] = useState('list');
 
   // Shared Loaded Data
@@ -22,6 +30,14 @@ const Administration = () => {
   const [usersList, setUsersList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // --- Bookings State ---
+  const [bookingsList, setBookingsList] = useState([]);
+  const [bookingHotelFilter, setBookingHotelFilter] = useState('ALL');
+  const [bookingSearchQuery, setBookingSearchQuery] = useState('');
+  const [bookingStatusFilter, setBookingStatusFilter] = useState('ALL');
+  const [selectedBookingDetails, setSelectedBookingDetails] = useState(null);
+
 
   // --- Product Form State ---
   const [prodName, setProdName] = useState('');
@@ -115,7 +131,11 @@ const Administration = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('http://localhost:8080/api/users');
+      const res = await fetch('http://localhost:8080/api/users', {
+        headers: {
+          ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {})
+        }
+      });
       if (!res.ok) throw new Error('Error al conectar con la API.');
       const data = await res.json();
       setUsersList(data);
@@ -126,12 +146,69 @@ const Administration = () => {
     }
   };
 
+  // Fetch Bookings List
+  const fetchBookings = async (productId = null) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const url = (productId && productId !== 'ALL')
+        ? `http://localhost:8080/api/bookings?productId=${productId}`
+        : 'http://localhost:8080/api/bookings';
+      const res = await fetch(url, {
+        headers: {
+          ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {})
+        }
+      });
+      if (!res.ok) throw new Error('Error al consultar las reservas.');
+      const data = await res.json();
+      setBookingsList(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Booking helper calculations
+  const getBookingStatus = (startDate, endDate) => {
+    const today = new Date().toISOString().split('T')[0];
+    if (endDate < today) {
+      return { key: 'COMPLETED', label: 'Finalizada', color: '#495057', bg: '#e9ecef' };
+    } else if (startDate <= today && endDate >= today) {
+      return { key: 'ACTIVE', label: 'En curso', color: '#0d6efd', bg: '#e7f1ff' };
+    } else {
+      return { key: 'UPCOMING', label: 'Próxima', color: '#198754', bg: '#d1e7dd' };
+    }
+  };
+
+  const calculateNights = (start, end) => {
+    if (!start || !end) return 1;
+    const d1 = new Date(start);
+    const d2 = new Date(end);
+    const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 1;
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
+
   // Load section-specific resources
   useEffect(() => {
     if (!user || user.role !== 'ROLE_ADMIN') return;
 
     if (activeSection === 'list') {
       fetchProducts();
+    } else if (activeSection === 'bookings') {
+      fetchBookings();
+      if (products.length === 0) {
+        fetchProducts();
+      }
     } else if (activeSection === 'add_product') {
       fetchCategories();
       fetchCharacteristics();
@@ -173,6 +250,7 @@ const Administration = () => {
     const payload = {
       name: prodName,
       description: prodDesc,
+      categoryId: parseInt(prodCategoryId),
       category: selectedCategoryObj,
       location: prodLocation,
       rating: 9.0, // Default premium value
@@ -184,13 +262,16 @@ const Administration = () => {
     try {
       const response = await fetch('http://localhost:8080/api/products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {})
+        },
         body: JSON.stringify(payload)
       });
       const data = await response.json();
 
       if (!response.ok) {
-        return setProdError(data.error || 'Error al guardar el producto.');
+        return setProdError(data.message || data.error || 'Error al guardar el producto.');
       }
 
       setProdSuccess('¡El alojamiento ha sido registrado de forma exitosa en el catálogo!');
@@ -239,13 +320,16 @@ const Administration = () => {
     try {
       const response = await fetch('http://localhost:8080/api/categories', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {})
+        },
         body: JSON.stringify({ title: catTitle, description: catDesc, imageUrl: catImgUrl })
       });
       const data = await response.json();
 
       if (!response.ok) {
-        return setCatError(data.error || 'Error al guardar la categoría.');
+        return setCatError(data.message || data.error || 'Error al guardar la categoría.');
       }
 
       setCatSuccess('Categoría registrada exitosamente.');
@@ -268,7 +352,12 @@ const Administration = () => {
   const handleCategoryDeleteConfirm = async () => {
     if (!deleteCategoryId) return;
     try {
-      const res = await fetch(`http://localhost:8080/api/categories/${deleteCategoryId}`, { method: 'DELETE' });
+      const res = await fetch(`http://localhost:8080/api/categories/${deleteCategoryId}`, {
+        method: 'DELETE',
+        headers: {
+          ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {})
+        }
+      });
       if (res.ok) {
         fetchCategories();
       } else {
@@ -294,13 +383,16 @@ const Administration = () => {
     try {
       const response = await fetch('http://localhost:8080/api/characteristics', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {})
+        },
         body: JSON.stringify({ name: charName, icon: charIcon })
       });
       const data = await response.json();
 
       if (!response.ok) {
-        return setCharError(data.error || 'Error al guardar la característica.');
+        return setCharError(data.message || data.error || 'Error al guardar la característica.');
       }
 
       setCharSuccess('Característica registrada exitosamente.');
@@ -316,7 +408,12 @@ const Administration = () => {
   const handleDeleteCharacteristic = async (id) => {
     if (!window.confirm('¿Seguro que deseas eliminar esta característica?')) return;
     try {
-      const res = await fetch(`http://localhost:8080/api/characteristics/${id}`, { method: 'DELETE' });
+      const res = await fetch(`http://localhost:8080/api/characteristics/${id}`, {
+        method: 'DELETE',
+        headers: {
+          ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {})
+        }
+      });
       if (res.ok) fetchCharacteristics();
     } catch (err) {
       console.error(err);
@@ -338,7 +435,10 @@ const Administration = () => {
     try {
       const response = await fetch(`http://localhost:8080/api/users/${targetUser.id}/role`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {})
+        },
         body: JSON.stringify({ role: newRole })
       });
 
@@ -360,7 +460,12 @@ const Administration = () => {
   const handleProductDeleteConfirm = async () => {
     if (!deleteProductId) return;
     try {
-      const res = await fetch(`http://localhost:8080/api/products/${deleteProductId}`, { method: 'DELETE' });
+      const res = await fetch(`http://localhost:8080/api/products/${deleteProductId}`, {
+        method: 'DELETE',
+        headers: {
+          ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {})
+        }
+      });
       if (res.ok) {
         fetchProducts();
       } else {
@@ -420,31 +525,78 @@ const Administration = () => {
       <Header />
       <main className="app-main admin-page">
         {/* Sidebar Nav */}
-        <aside className="admin-sidebar">
-          <div className="admin-sidebar-title">Administración</div>
-          <div className={`admin-nav-item ${activeSection === 'list' ? 'active' : ''}`} onClick={() => setActiveSection('list')}>
-            <List size={18} />
-            <span>Lista de productos</span>
+        <aside className={`admin-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+          <div className="admin-sidebar-header">
+            {!isSidebarCollapsed && <div className="admin-sidebar-title">Administración</div>}
+            <button
+              type="button"
+              className="admin-sidebar-toggle-btn"
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              title={isSidebarCollapsed ? "Expandir menú" : "Contraer menú"}
+              aria-label={isSidebarCollapsed ? "Expandir menú" : "Contraer menú"}
+            >
+              {isSidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            </button>
           </div>
-          <div className={`admin-nav-item ${activeSection === 'add_product' ? 'active' : ''}`} onClick={() => setActiveSection('add_product')}>
-            <Plus size={18} />
-            <span>Agregar producto</span>
+
+          <div className="admin-sidebar-nav">
+            <div 
+              className={`admin-nav-item ${activeSection === 'list' ? 'active' : ''}`} 
+              onClick={() => setActiveSection('list')}
+              title={isSidebarCollapsed ? "Lista de productos" : undefined}
+            >
+              <List size={20} className="admin-nav-icon" />
+              {!isSidebarCollapsed && <span>Lista de productos</span>}
+            </div>
+            <div 
+              className={`admin-nav-item ${activeSection === 'bookings' ? 'active' : ''}`} 
+              onClick={() => setActiveSection('bookings')}
+              title={isSidebarCollapsed ? "Reservas de Hoteles" : undefined}
+            >
+              <Calendar size={20} className="admin-nav-icon" />
+              {!isSidebarCollapsed && <span>Reservas de Hoteles</span>}
+            </div>
+            <div 
+              className={`admin-nav-item ${activeSection === 'add_product' ? 'active' : ''}`} 
+              onClick={() => setActiveSection('add_product')}
+              title={isSidebarCollapsed ? "Agregar producto" : undefined}
+            >
+              <Plus size={20} className="admin-nav-icon" />
+              {!isSidebarCollapsed && <span>Agregar producto</span>}
+            </div>
+            <div 
+              className={`admin-nav-item ${activeSection === 'categories' ? 'active' : ''}`} 
+              onClick={() => setActiveSection('categories')}
+              title={isSidebarCollapsed ? "Categorías" : undefined}
+            >
+              <Layers size={20} className="admin-nav-icon" />
+              {!isSidebarCollapsed && <span>Categorías</span>}
+            </div>
+            <div 
+              className={`admin-nav-item ${activeSection === 'characteristics' ? 'active' : ''}`} 
+              onClick={() => setActiveSection('characteristics')}
+              title={isSidebarCollapsed ? "Características" : undefined}
+            >
+              <Settings size={20} className="admin-nav-icon" />
+              {!isSidebarCollapsed && <span>Características</span>}
+            </div>
+            <div 
+              className={`admin-nav-item ${activeSection === 'users' ? 'active' : ''}`} 
+              onClick={() => setActiveSection('users')}
+              title={isSidebarCollapsed ? "Roles de Usuarios" : undefined}
+            >
+              <Users size={20} className="admin-nav-icon" />
+              {!isSidebarCollapsed && <span>Roles de Usuarios</span>}
+            </div>
           </div>
-          <div className={`admin-nav-item ${activeSection === 'categories' ? 'active' : ''}`} onClick={() => setActiveSection('categories')}>
-            <Layers size={18} />
-            <span>Categorías</span>
-          </div>
-          <div className={`admin-nav-item ${activeSection === 'characteristics' ? 'active' : ''}`} onClick={() => setActiveSection('characteristics')}>
-            <Settings size={18} />
-            <span>Características</span>
-          </div>
-          <div className={`admin-nav-item ${activeSection === 'users' ? 'active' : ''}`} onClick={() => setActiveSection('users')}>
-            <Users size={18} />
-            <span>Roles de Usuarios</span>
-          </div>
-          <div className="admin-nav-item" style={{ marginTop: 'auto', borderTop: '1px solid var(--primary-light)' }} onClick={() => navigate('/')}>
-            <ArrowLeft size={18} />
-            <span>Volver al Home</span>
+
+          <div 
+            className="admin-nav-item admin-nav-exit" 
+            onClick={() => navigate('/')}
+            title={isSidebarCollapsed ? "Volver al Home" : undefined}
+          >
+            <ArrowLeft size={20} className="admin-nav-icon" />
+            {!isSidebarCollapsed && <span>Volver al Home</span>}
           </div>
         </aside>
 
@@ -487,6 +639,263 @@ const Administration = () => {
               )}
             </div>
           )}
+
+          {/* View: Hotel Bookings Management View */}
+          {activeSection === 'bookings' && (() => {
+            const totalBookings = bookingsList.length;
+            const upcomingCount = bookingsList.filter(b => getBookingStatus(b.startDate, b.endDate).key === 'UPCOMING').length;
+            const activeCount = bookingsList.filter(b => getBookingStatus(b.startDate, b.endDate).key === 'ACTIVE').length;
+            const completedCount = bookingsList.filter(b => getBookingStatus(b.startDate, b.endDate).key === 'COMPLETED').length;
+
+            const filteredBookings = bookingsList.filter((b) => {
+              if (bookingHotelFilter !== 'ALL' && b.product?.id?.toString() !== bookingHotelFilter) {
+                return false;
+              }
+              const status = getBookingStatus(b.startDate, b.endDate);
+              if (bookingStatusFilter !== 'ALL' && status.key !== bookingStatusFilter) {
+                return false;
+              }
+              if (bookingSearchQuery.trim()) {
+                const q = bookingSearchQuery.toLowerCase().trim();
+                const fullName = `${b.user?.firstName || ''} ${b.user?.lastName || ''}`.toLowerCase();
+                const email = (b.user?.email || '').toLowerCase();
+                const hotelName = (b.product?.name || '').toLowerCase();
+                const hotelLoc = (b.product?.location || '').toLowerCase();
+                const bookingId = b.id?.toString() || '';
+                return (
+                  fullName.includes(q) ||
+                  email.includes(q) ||
+                  hotelName.includes(q) ||
+                  hotelLoc.includes(q) ||
+                  bookingId.includes(q)
+                );
+              }
+              return true;
+            });
+
+            return (
+              <div>
+                <div className="admin-bookings-header">
+                  <div>
+                    <h1 className="admin-section-title" style={{ marginBottom: '4px' }}>Reservas de Hoteles</h1>
+                    <p style={{ color: 'var(--text-medium)', fontSize: '14px' }}>
+                      Visualiza, filtra y gestiona todas las reservas registradas en los alojamientos de la plataforma.
+                    </p>
+                  </div>
+
+                  {/* Summary Metric Cards */}
+                  <div className="bookings-stats-grid">
+                    <div className="booking-stat-card">
+                      <div className="booking-stat-icon">
+                        <Calendar size={22} />
+                      </div>
+                      <div>
+                        <div className="booking-stat-val">{totalBookings}</div>
+                        <div className="booking-stat-lbl">Total de Reservas</div>
+                      </div>
+                    </div>
+                    <div className="booking-stat-card stat-upcoming">
+                      <div className="booking-stat-icon">
+                        <Clock size={22} />
+                      </div>
+                      <div>
+                        <div className="booking-stat-val">{upcomingCount}</div>
+                        <div className="booking-stat-lbl">Próximas</div>
+                      </div>
+                    </div>
+                    <div className="booking-stat-card stat-active">
+                      <div className="booking-stat-icon">
+                        <Building2 size={22} />
+                      </div>
+                      <div>
+                        <div className="booking-stat-val">{activeCount}</div>
+                        <div className="booking-stat-lbl">En Curso</div>
+                      </div>
+                    </div>
+                    <div className="booking-stat-card stat-completed">
+                      <div className="booking-stat-icon">
+                        <List size={22} />
+                      </div>
+                      <div>
+                        <div className="booking-stat-val">{completedCount}</div>
+                        <div className="booking-stat-lbl">Finalizadas</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Filter Toolbar */}
+                  <div className="bookings-toolbar">
+                    <div className="bookings-search-input">
+                      <Search size={18} />
+                      <input 
+                        type="text" 
+                        placeholder="Buscar por cliente, email, hotel o ID..." 
+                        value={bookingSearchQuery}
+                        onChange={(e) => setBookingSearchQuery(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="bookings-filter-group">
+                      <select 
+                        className="bookings-hotel-select"
+                        value={bookingHotelFilter}
+                        onChange={(e) => setBookingHotelFilter(e.target.value)}
+                      >
+                        <option value="ALL">🏨 Todos los Alojamientos</option>
+                        {products.map(prod => (
+                          <option key={prod.id} value={prod.id.toString()}>
+                            {prod.name} ({prod.location})
+                          </option>
+                        ))}
+                      </select>
+
+                      <div style={{ display: 'flex', gap: '6px', background: '#F1F3F5', padding: '4px', borderRadius: '8px' }}>
+                        {[
+                          { key: 'ALL', label: 'Todas' },
+                          { key: 'UPCOMING', label: 'Próximas' },
+                          { key: 'ACTIVE', label: 'En curso' },
+                          { key: 'COMPLETED', label: 'Finalizadas' }
+                        ].map(tab => (
+                          <button
+                            key={tab.key}
+                            type="button"
+                            onClick={() => setBookingStatusFilter(tab.key)}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              border: 'none',
+                              cursor: 'pointer',
+                              backgroundColor: bookingStatusFilter === tab.key ? 'var(--primary-color)' : 'transparent',
+                              color: bookingStatusFilter === tab.key ? '#fff' : 'var(--text-medium)',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {loading ? (
+                  <p style={{ padding: '20px', color: 'var(--text-medium)' }}>Cargando reservas...</p>
+                ) : error ? (
+                  <div className="form-error">{error}</div>
+                ) : filteredBookings.length === 0 ? (
+                  <div className="admin-card" style={{ textAlign: 'center', padding: '40px 20px' }}>
+                    <Calendar size={48} style={{ color: 'var(--text-light)', marginBottom: '12px' }} />
+                    <h3 style={{ fontSize: '18px', color: 'var(--text-dark)' }}>No se encontraron reservas</h3>
+                    <p style={{ color: 'var(--text-medium)', fontSize: '14px', marginTop: '6px' }}>
+                      {bookingSearchQuery || bookingHotelFilter !== 'ALL' || bookingStatusFilter !== 'ALL'
+                        ? 'No hay reservas que coincidan con los filtros aplicados.'
+                        : 'Aún no se han registrado reservas en el sistema.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="table-wrapper">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Alojamiento</th>
+                          <th>Huésped</th>
+                          <th>Estadía</th>
+                          <th>Horario Llegada</th>
+                          <th>Estado</th>
+                          <th style={{ textAlign: 'right' }}>Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredBookings.map((b) => {
+                          const status = getBookingStatus(b.startDate, b.endDate);
+                          const nights = calculateNights(b.startDate, b.endDate);
+                          const hotelThumb = b.product?.images?.[0] || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200';
+
+                          return (
+                            <tr key={b.id}>
+                              <td style={{ fontWeight: 700, color: 'var(--text-medium)' }}>#{b.id}</td>
+                              <td>
+                                <div className="booking-hotel-info">
+                                  <img src={hotelThumb} alt={b.product?.name || 'Hotel'} className="booking-thumb" />
+                                  <div>
+                                    <div className="booking-hotel-name">{b.product?.name || 'Alojamiento no disponible'}</div>
+                                    <div className="booking-hotel-meta">
+                                      <MapPin size={12} />
+                                      <span>{b.product?.location || 'Ubicación no disponible'}</span>
+                                      {b.product?.category?.title && (
+                                        <span>• {b.product.category.title}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td>
+                                <div className="booking-user-cell">
+                                  <div className="booking-user-name">
+                                    {b.user ? `${b.user.firstName} ${b.user.lastName}` : 'Usuario anónimo'}
+                                  </div>
+                                  <div className="booking-user-email">
+                                    {b.user?.email || '-'}
+                                  </div>
+                                </div>
+                              </td>
+                              <td>
+                                <div className="booking-dates-cell">
+                                  <div className="booking-date-range">
+                                    {formatDate(b.startDate)} → {formatDate(b.endDate)}
+                                  </div>
+                                  <span className="booking-nights-badge">
+                                    {nights} {nights === 1 ? 'noche' : 'noches'}
+                                  </span>
+                                </div>
+                              </td>
+                              <td style={{ fontSize: '13px', color: 'var(--text-medium)' }}>
+                                {b.estimatedArrivalTime ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <Clock size={13} style={{ color: 'var(--primary-color)' }} />
+                                    <span>{b.estimatedArrivalTime}</span>
+                                  </div>
+                                ) : (
+                                  <span style={{ color: '#adb5bd', fontStyle: 'italic' }}>No indicada</span>
+                                )}
+                              </td>
+                              <td>
+                                <span 
+                                  className="booking-pill"
+                                  style={{ backgroundColor: status.bg, color: status.color }}
+                                >
+                                  {status.label}
+                                </span>
+                              </td>
+                              <td style={{ textAlign: 'right' }}>
+                                <button
+                                  className="btn-outline"
+                                  style={{
+                                    padding: '6px 12px',
+                                    fontSize: '12px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                  }}
+                                  onClick={() => setSelectedBookingDetails(b)}
+                                >
+                                  <Eye size={14} />
+                                  <span>Detalles</span>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* View 2: Add Product Form (complying with User Story 3, 12, 17) */}
           {activeSection === 'add_product' && (
@@ -769,6 +1178,122 @@ const Administration = () => {
             <div className="confirm-modal-actions">
               <button className="btn-confirm-yes" onClick={handleCategoryDeleteConfirm}>Confirmar</button>
               <button className="btn-confirm-no" onClick={() => setIsConfirmDeleteCatOpen(false)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Booking Details Modal */}
+      {selectedBookingDetails && (
+        <div className="confirm-modal-overlay" onClick={() => setSelectedBookingDetails(null)}>
+          <div 
+            className="confirm-modal-box" 
+            style={{ maxWidth: '580px', width: '90%', textAlign: 'left', padding: '28px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e9ecef', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary-color)', margin: 0 }}>
+                  Reserva #{selectedBookingDetails.id}
+                </h3>
+                <span style={{ fontSize: '12px', color: 'var(--text-medium)' }}>
+                  Detalle completo de la reserva
+                </span>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setSelectedBookingDetails(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-medium)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Hotel Info Card */}
+            <div style={{ display: 'flex', gap: '16px', background: '#F8F9FA', padding: '16px', borderRadius: '8px', marginBottom: '20px' }}>
+              <img 
+                src={selectedBookingDetails.product?.images?.[0] || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=300'} 
+                alt={selectedBookingDetails.product?.name || 'Hotel'} 
+                style={{ width: '90px', height: '90px', objectFit: 'cover', borderRadius: '6px' }}
+              />
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <span style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--accent-color)', fontWeight: 700 }}>
+                  {selectedBookingDetails.product?.category?.title || 'Alojamiento'}
+                </span>
+                <h4 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-dark)', margin: '4px 0' }}>
+                  {selectedBookingDetails.product?.name}
+                </h4>
+                <p style={{ fontSize: '13px', color: 'var(--text-medium)', margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <MapPin size={13} /> {selectedBookingDetails.product?.location}
+                </p>
+              </div>
+            </div>
+
+            {/* Info Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <div>
+                <span style={{ fontSize: '12px', color: 'var(--text-medium)', fontWeight: 600 }}>Huésped:</span>
+                <p style={{ margin: '4px 0 0', fontWeight: 700, color: 'var(--text-dark)', fontSize: '14px' }}>
+                  {selectedBookingDetails.user ? `${selectedBookingDetails.user.firstName} ${selectedBookingDetails.user.lastName}` : 'No disponible'}
+                </p>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-medium)' }}>
+                  {selectedBookingDetails.user?.email || '-'}
+                </p>
+              </div>
+
+              <div>
+                <span style={{ fontSize: '12px', color: 'var(--text-medium)', fontWeight: 600 }}>Estado:</span>
+                <div style={{ marginTop: '4px' }}>
+                  {(() => {
+                    const status = getBookingStatus(selectedBookingDetails.startDate, selectedBookingDetails.endDate);
+                    return (
+                      <span className="booking-pill" style={{ backgroundColor: status.bg, color: status.color }}>
+                        {status.label}
+                      </span>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <div>
+                <span style={{ fontSize: '12px', color: 'var(--text-medium)', fontWeight: 600 }}>Fechas de Estadía:</span>
+                <p style={{ margin: '4px 0 0', fontWeight: 600, color: 'var(--text-dark)', fontSize: '13px' }}>
+                  Check-in: {formatDate(selectedBookingDetails.startDate)}
+                </p>
+                <p style={{ margin: '2px 0 0', fontWeight: 600, color: 'var(--text-dark)', fontSize: '13px' }}>
+                  Check-out: {formatDate(selectedBookingDetails.endDate)}
+                </p>
+                <span className="booking-nights-badge" style={{ marginTop: '6px' }}>
+                  {calculateNights(selectedBookingDetails.startDate, selectedBookingDetails.endDate)} {calculateNights(selectedBookingDetails.startDate, selectedBookingDetails.endDate) === 1 ? 'noche' : 'noches'}
+                </span>
+              </div>
+
+              <div>
+                <span style={{ fontSize: '12px', color: 'var(--text-medium)', fontWeight: 600 }}>Horario de Llegada:</span>
+                <p style={{ margin: '4px 0 0', fontWeight: 600, color: 'var(--text-dark)', fontSize: '13px' }}>
+                  {selectedBookingDetails.estimatedArrivalTime || 'No indicado por el cliente'}
+                </p>
+              </div>
+            </div>
+
+            {/* Notes if available */}
+            {selectedBookingDetails.notes && (
+              <div style={{ background: '#FFF8E1', borderLeft: '4px solid #FFB300', padding: '12px 14px', borderRadius: '4px', marginBottom: '20px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#F57F17' }}>Observaciones del Huésped:</span>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#5D4037' }}>
+                  {selectedBookingDetails.notes}
+                </p>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+              <button 
+                type="button" 
+                className="btn-confirm-no"
+                onClick={() => setSelectedBookingDetails(null)}
+              >
+                Cerrar
+              </button>
             </div>
           </div>
         </div>

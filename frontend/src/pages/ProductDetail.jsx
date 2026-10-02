@@ -5,6 +5,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import DoubleCalendar from '../components/DoubleCalendar';
 import { AuthContext } from '../context/AuthContext';
+import { favoriteService } from '../services/favoriteService';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -71,7 +72,11 @@ const ProductDetail = () => {
     setBookingsLoading(true);
     setBookingsError(null);
     try {
-      const response = await fetch(`http://localhost:8080/api/bookings/product/${id}`);
+      const response = await fetch(`http://localhost:8080/api/bookings/product/${id}`, {
+        headers: {
+          ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {})
+        }
+      });
       if (!response.ok) {
         throw new Error('No se pudo obtener la información de disponibilidad en este momento.');
       }
@@ -110,35 +115,70 @@ const ProductDetail = () => {
 
   // Sync Favorite state
   useEffect(() => {
-    if (user && user.email) {
-      const stored = localStorage.getItem(`favs_${user.email}`);
-      const favIds = stored ? JSON.parse(stored) : [];
-      setIsFav(favIds.includes(parseInt(id)));
-    } else {
-      setIsFav(false);
-    }
+    let isMounted = true;
+    const checkFav = async () => {
+      if (user && user.email) {
+        if (user.token) {
+          try {
+            const fav = await favoriteService.isFavorite(id, user.token);
+            if (isMounted) setIsFav(fav);
+            return;
+          } catch (e) {
+            console.error('Error checking favorite status:', e);
+          }
+        }
+        const stored = localStorage.getItem(`favs_${user.email}`);
+        const favIds = stored ? JSON.parse(stored) : [];
+        if (isMounted) setIsFav(favIds.includes(parseInt(id)));
+      } else {
+        if (isMounted) setIsFav(false);
+      }
+    };
+
+    checkFav();
+
+    const handleSync = () => {
+      checkFav();
+    };
+    window.addEventListener('favoritesChanged', handleSync);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('favoritesChanged', handleSync);
+    };
   }, [user, id]);
 
-  const toggleFavorite = () => {
+  const toggleFavorite = async () => {
     if (!user) {
       alert('Debes iniciar sesión para marcar este producto como favorito.');
       navigate('/login');
       return;
     }
 
+    const prodIdNum = parseInt(id);
+    const newFavState = !isFav;
+    setIsFav(newFavState);
+
     const stored = localStorage.getItem(`favs_${user.email}`);
     let favIds = stored ? JSON.parse(stored) : [];
-    const prodIdNum = parseInt(id);
-
-    if (favIds.includes(prodIdNum)) {
-      favIds = favIds.filter(fId => fId !== prodIdNum);
-      setIsFav(false);
+    if (newFavState) {
+      if (!favIds.includes(prodIdNum)) favIds.push(prodIdNum);
     } else {
-      favIds.push(prodIdNum);
-      setIsFav(true);
+      favIds = favIds.filter(fId => fId !== prodIdNum);
     }
     localStorage.setItem(`favs_${user.email}`, JSON.stringify(favIds));
-    window.dispatchEvent(new Event('favoritesChanged')); // notify favorites page
+
+    try {
+      if (user.token) {
+        if (newFavState) {
+          await favoriteService.addFavorite(prodIdNum, user.token);
+        } else {
+          await favoriteService.removeFavorite(prodIdNum, user.token);
+        }
+      }
+      window.dispatchEvent(new Event('favoritesChanged')); // notify favorites page
+    } catch (e) {
+      console.error('Error toggling favorite on backend:', e);
+    }
   };
 
   const handleStartBookingClick = () => {
@@ -167,7 +207,10 @@ const ProductDetail = () => {
     try {
       const response = await fetch(`http://localhost:8080/api/products/${id}/reviews`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {})
+        },
         body: JSON.stringify({
           stars: userStars,
           comment: userComment,
@@ -175,8 +218,10 @@ const ProductDetail = () => {
         })
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Ocurrió un error al enviar tu valoración.');
+        throw new Error(data.message || data.error || 'Ocurrió un error al enviar tu valoración.');
       }
 
       setReviewSuccess('¡Tu reseña ha sido publicada exitosamente!');

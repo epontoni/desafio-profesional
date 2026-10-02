@@ -10,18 +10,37 @@ import BookingForm from './pages/BookingForm';
 import UserBookings from './pages/UserBookings';
 import WhatsAppWidget from './components/WhatsAppWidget';
 
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/producto/:id" element={<ProductDetail />} />
-        <Route path="/administracion" element={<Administration />} />
+        <Route path="/administracion" element={
+          <AdminRoute>
+            <Administration />
+          </AdminRoute>
+        } />
         <Route path="/registro" element={<Register />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/favoritos" element={<Favorites />} />
-        <Route path="/producto/:id/reserva" element={<BookingForm />} />
-        <Route path="/mis-reservas" element={<UserBookings />} />
+        <Route path="/favoritos" element={
+          <ProtectedRoute>
+            <Favorites />
+          </ProtectedRoute>
+        } />
+        <Route path="/producto/:id/reserva" element={
+          <ProtectedRoute>
+            <BookingForm />
+          </ProtectedRoute>
+        } />
+        <Route path="/mis-reservas" element={
+          <ProtectedRoute>
+            <UserBookings />
+          </ProtectedRoute>
+        } />
       </Routes>
       <WhatsAppWidget />
     </BrowserRouter>

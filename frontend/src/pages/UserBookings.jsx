@@ -23,11 +23,15 @@ const UserBookings = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`http://localhost:8080/api/bookings/user/${user.email}`);
-        if (!response.ok) {
-          throw new Error('Error al obtener el historial de reservas.');
-        }
+        const response = await fetch(`http://localhost:8080/api/bookings/user/${user.email}`, {
+          headers: {
+            ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {})
+          }
+        });
         const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || data.error || 'Error al obtener el historial de reservas.');
+        }
         setBookingsList(data);
       } catch (err) {
         console.error(err);

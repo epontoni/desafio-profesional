@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Wifi, Waves, MapPin, Star, Heart, Car, Tv, Wind, Dumbbell } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import { favoriteService } from '../services/favoriteService';
 
 const RecommendationsBlock = ({ selectedCategory, onClearFilter, searchParams, onClearSearch }) => {
   const navigate = useNavigate();
@@ -54,9 +55,20 @@ const RecommendationsBlock = ({ selectedCategory, onClearFilter, searchParams, o
     }
   };
 
-  // Load favorites from localStorage
-  const loadFavorites = () => {
+  // Load favorites from backend (or fallback to cache)
+  const loadFavorites = async () => {
     if (user && user.email) {
+      if (user.token) {
+        try {
+          const backendFavs = await favoriteService.getFavorites(user.token);
+          const favIds = backendFavs.map(f => f.product?.id).filter(Boolean);
+          setFavorites(favIds);
+          localStorage.setItem(`favs_${user.email}`, JSON.stringify(favIds));
+          return;
+        } catch (e) {
+          console.error('Error fetching favorites from backend:', e);
+        }
+      }
       const stored = localStorage.getItem(`favs_${user.email}`);
       if (stored) {
         setFavorites(JSON.parse(stored));
@@ -75,10 +87,16 @@ const RecommendationsBlock = ({ selectedCategory, onClearFilter, searchParams, o
   // Reload favorites whenever user logs in or out
   useEffect(() => {
     loadFavorites();
+
+    const handleSync = () => {
+      loadFavorites();
+    };
+    window.addEventListener('favoritesChanged', handleSync);
+    return () => window.removeEventListener('favoritesChanged', handleSync);
   }, [user]);
 
-  // Handle marking as favorite (complying with User Story 24)
-  const toggleFavorite = (productId, e) => {
+  // Handle marking as favorite (persisted to backend)
+  const toggleFavorite = async (productId, e) => {
     e.stopPropagation(); // prevent card click details trigger
     if (!user) {
       alert('Debes iniciar sesión para marcar este producto como favorito.');
@@ -86,8 +104,9 @@ const RecommendationsBlock = ({ selectedCategory, onClearFilter, searchParams, o
       return;
     }
 
+    const isFav = favorites.includes(productId);
     let updated;
-    if (favorites.includes(productId)) {
+    if (isFav) {
       updated = favorites.filter(id => id !== productId);
     } else {
       updated = [...favorites, productId];
@@ -95,8 +114,18 @@ const RecommendationsBlock = ({ selectedCategory, onClearFilter, searchParams, o
     setFavorites(updated);
     localStorage.setItem(`favs_${user.email}`, JSON.stringify(updated));
 
-    // Dispatch global event for real-time favorites page synchronization (complying with User Story 25)
-    window.dispatchEvent(new Event('favoritesChanged'));
+    try {
+      if (user.token) {
+        if (isFav) {
+          await favoriteService.removeFavorite(productId, user.token);
+        } else {
+          await favoriteService.addFavorite(productId, user.token);
+        }
+      }
+      window.dispatchEvent(new Event('favoritesChanged'));
+    } catch (err) {
+      console.error('Error persisting favorite:', err);
+    }
   };
 
   const fetchRandomProducts = async () => {
